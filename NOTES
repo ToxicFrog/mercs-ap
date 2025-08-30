@@ -1,0 +1,177 @@
+# Mercenaries Archipelago
+
+Notes on AP for Mercenaries: Playground of Destruction.
+
+In normal play you can:
+- find collectibles;
+- clear missions;
+- clear mission bonus objectives;
+- clear challenges;
+- and verify cards.
+
+All bonus objectives, and some cards, are missable.
+
+You are rewarded for these with:
+- unlocks in the Merchant of Menace;
+- money;
+- and intel.
+
+Generally speaking, challenges only reward money, cards reward money and intel,
+missions and collectables reward money and MoM unlocks.
+
+Certain cards can only be verified during a mission, and unlocking some of those
+missions requires collecting sufficient intel.
+
+Unlocks from collectibles are generally given at certain thresholds, e.g. you get
+unlocks at 1, 5, and 10 blueprints, but 2-4 and 6-9 give you nothing.
+
+This suggests our check and item pools.
+Checks are: collectibles, mission completion, mission bonus completion, and verification.
+Items are: MoM unlocks, money, intel, and maybe collectibles.
+
+For collectibles, we have two ways of handling them -- one is that the collectibles
+are in the pool, and finding them gets you either additional checks or MoM unlocks
+once you reach the threshold points.
+
+The other option is that we remove collectables entirely, and the things they would
+normally unlock are added to the pool directly, and we generate filler like free
+airstrikes or additional money to make up the difference (since there's about 250
+collectibles which, between them, unlike about 30 MoM entries, half of those cheat
+codes rather than actual items).
+
+For implementation, I need to do a bunch of reverse engineering.
+
+The game, broadly speaking, has "primary" information:
+- which collectibles are found;
+- which missions and bonus objectives are complete;
+- which challenges are complete;
+- which cards are verified
+- how much money you have
+
+And secondary information, which can be derived from first principles from the
+primary info:
+- how many collectables you have;
+- which items are available in the MoM;
+- how much intel you have;
+- which cards are present in the world;
+- which card missions are available.
+
+My hope is that the secondary information is stored in RAM and updated when the
+primaries change, rather than being recalculated from scratch every time you open
+the PDA or similar. In that case, we can watch the RAM for the primary info to
+figure out what the player has accomplished and send checks, and write the ram
+for the secondary info to control what is actually unlocked.
+
+
+PCSX2 supports the PINE remote debugging protocol.
+Socket is created in $XDG_RUNTIME_DIR/pcsx2.sock.<slot> on linux, /tmp if XDGRTD is unset
+OSX uses $TMPDIR/pcsx2.sock.<slot> with TMPDIR defaulting to /tmp
+The .slot may be omitted if the default slot is used
+Windows uses TCP ports, slot == port number
+
+Messages are in LTV format, little-endian.
+
+L is a uint32_t and includes the size of the L and T fields.
+T is a uint8_t.
+
+Opcodes we care about are:
+0,1,2,3: read an 8,16,32,64-bit value, V is uint32_t address
+4,5,6,7: write, V is uint32_t address followed by uint{8,16,32,64}_t value
+Possibly also 9 (save state) and $A (load state), argument is a uint8_t for the state slot
+$B, $C, $D, $E, and $F may be useful for safety checks:
+- game title
+- game id
+- game uuid
+- game version
+- emulator status (either 0 running, 1 paused, 2 shutdown)
+These all return strings in the form of:
+- 32-bit size including the null terminator
+- null terminated string
+
+Responses are also LTV, T is either $00 (success) or $FF (fail)
+V depends on the message, for reads it's the value read, for writes or saves/loads it's empty
+
+Batch messages consist of a single L field, followed by a series of (T,V) pairs
+Responses consist of L, one T for the entire batch, then all Vs concatenated
+
+Mercs uses Lua 5.0.1 internally. Source code is stored, compressed, in the DSK files.
+It is (I think) loaded, decompressed, and compiled at game startup, the bytecode
+retained and the source discarded.
+
+Layout of a lua object (lua_TObject):
+{
+  int tt;  // tag: nil bool luserdata number string table function fuserdata thread
+  Value union {
+    int b; // if boolean
+    lua_Number n; // if number -- what type is this on the PS2?
+    void *p; // luserdata?
+    GCObject *gc; // collectable objects
+  }
+}
+
+A GCObject is
+union GCObject {
+  GCheader gch;
+  union TString ts;
+  union Udata u;
+  union Closure cl;
+  struct Table h;
+  struct Proto p;
+  struct UpVal uv;
+  struct lua_State th;  /* thread */
+};
+
+// this is the "header for the string table"
+// accessed with
+#define getstr(ts)	cast(const char *, (ts) + 1)
+// so an actual string has an implicit 'char str_data[]' at the end
+typedef union TString {
+  L_Umaxalign dummy;  /* ensures maximum alignment for strings */
+  struct {
+    CommonHeader;
+    lu_byte reserved;
+    lu_hash hash;
+    size_t len;
+  } tsv;
+} TString;
+
+// so in memory it looks something like:
+{
+  void*;
+  byte; // always 4, LUA_TSTRING
+  byte; // 0 or 1
+  byte; // always 0
+  hash; // 4 bytes?
+  size; // 4 bytes on MIPS I think
+  actual string data, null terminated
+}
+
+#define CommonHeader	GCObject *next; lu_byte tt; lu_byte marked
+
+typedef struct Node {
+  TObject i_key;
+  TObject i_val;
+  struct Node *next;  /* for chaining */
+} Node;
+
+
+typedef struct Table {
+  CommonHeader;
+  lu_byte flags;  /* 1<<p means tagmethod(p) is not present */
+  lu_byte lsizenode;  /* log2 of size of `node' array */
+  struct Table *metatable;
+  TObject *array;  /* array part */
+  Node *node;
+  Node *firstfree;  /* this position is free; all positions after it are full */
+  GCObject *gclist;
+  int sizearray;  /* size of `array' array */
+} Table;
+
+
+00578594 - ID of current mission. Doesn't seem to be a memory address.
+00579468 - mission phase counter? RA checks for this to be 3 to count a mission as complete.
+
+00558BF0
+00558BF4 - used for the cash display on the HUD. Not, however, the actual cash in inventory!
+
+005007f4 - pointer to character info? RA derefs this and then adds 0x74 to get model index
