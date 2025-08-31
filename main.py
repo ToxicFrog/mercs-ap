@@ -1,7 +1,7 @@
 import socket
 import struct
 
-from lua import TObject, GCObject
+from lua import TObject, GCObject, Lua_Nil, Lua_GCFunction, Lua_GCTable
 from pine import Pine
 
 pcsx2: Pine = Pine(path = '/run/user/8509/pcsx2.sock')
@@ -18,46 +18,17 @@ def peek8assert(addr, val, reason):
   print('[OK]', reason)
 
 
-def dump_function(address, indent='', seen=None):
-  isC = pcsx2.peek8(address + 6)
-  nups = pcsx2.peek8(address + 7)
-  if isC:
-    return
-
-  fenv = TObject(pcsx2, address + 16)
-  print('%sFENV' % indent, fenv)
-
-  # they all seem to be nil
-  # upvs = pcsx2.peek32(address + 20)
-  # for i in range(nups):
-  #   upv = pcsx2.peek32(upvs + i*4)
-  #   obj = pcsx2.peek32(upv + 8)
-  #   print('%sUPVAL %s' % (indent, str_tobject(obj)))
-
-  # todo: upvalues
-  proto = pcsx2.peek32(address + 12)
-  # constants at +8, locals at +24, upvalues at +28
-  # print('%sSOURCE' % indent, str_gcobject(proto + 32))
-  k = pcsx2.peek32(proto + 8)
-  sizek = pcsx2.peek32(proto + 40)
-  for i in range(sizek):
-    print('%sCONST$%08X' % (indent, k+i*8), TObject(pcsx2, k + i*8))
-
-  dump_gclist(pcsx2.peek32(address + 64), indent, seen)
-
 def dump_node(address, indent='', seen=None):
-  ktype = ltypes[pcsx2.peek32(address)]
-  if ktype == 'NIL':
+  k = TObject(pcsx2, address)
+  if isinstance(k, Lua_Nil):
+    # Check this before checking v, because if k is nil, v may be uninitialized
     return
-  vtype = ltypes[pcsx2.peek32(address + 8)]
-  print('%s[Node$%08X] %s: %s' % (indent, address, TObject(pcsx2, address), TObject(pcsx2, address + 8)))
-  if vtype == 'TABLE':
-    dump_table(pcsx2.peek32(address + 12), indent + '  ', seen)
-  if vtype == 'FUNCTION':
-    dump_function(pcsx2.peek32(address + 12), indent + '  ', seen)
-  # next = pcsx2.peek32(address + 16)
-  # if next > 0:
-  #   dump_node(next, indent)
+  v = TObject(pcsx2, address + 8)
+  print('%s[Node$%08X] %s: %s' % (indent, address, k, v))
+  if isinstance(v.val, Lua_GCTable):
+    dump_table(v.val.addr, indent + '  ', seen)
+  if isinstance(v.val, Lua_GCFunction):
+    v.dump(seen, indent + '  ')
 
 def dump_gclist(address, indent='', seen=None):
   return
@@ -86,8 +57,10 @@ def dump_table(address, indent='', seen=None):
     dump_node(hash + i*20, indent, seen)
 
   if metatable > 0 and metatable != _METATABLE:
-    print('%s[META] %s' % (indent, TObject(pcsx2, metatable)))
-    dump_table(metatable, indent + '  ', seen)
+    metatable = TObject(pcsx2, metatable)
+    if not isinstance(metatable, Lua_Nil):
+      print('%s[META] %s' % (indent, TObject(pcsx2, metatable)))
+      dump_table(metatable, indent + '  ', seen)
 
 
 Lptr = pcsx2.peek32(0x0056CBD0)

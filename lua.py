@@ -12,6 +12,9 @@ class Lua_TObject:
   def __eq__(self, other):
     return self.addr == other.addr
 
+  def dump(self, seen, indent=''):
+    return
+
 class Lua_Nil(Lua_TObject):
   def __str__(self):
     return 'nil'
@@ -35,6 +38,9 @@ class Lua_TObjectGC(Lua_TObject):
     super().__init__(pine, addr)
     self.val = LUA_GCTYPES[self.tt](pine, self.val)
     assert self.tt == self.val.tt
+
+  def dump(self, seen, indent=''):
+    return self.val.dump(seen, indent)
 
 class Lua_GCObject:
   def __init__(self, pine, addr):
@@ -68,12 +74,49 @@ class Lua_GCFunction(Lua_GCObject):
     self.nups = pine.peek8(addr + 7)
     if self.isC:
       self.cfunction = pine.peek32(addr + 12)
+      self.fenv = None
+    else:
+      self.proto = self.Proto(pine, pine.peek32(addr + 12))
+      self.fenv = TObject(pine, addr + 16)
 
   def __str__(self):
     if self.isC:
       return 'cfunction$%08X[%d]' % (self.cfunction, self.nups)
     else:
       return 'function$%08X[%d]' % (self.addr, self.nups)
+
+  def dump(self, seen, indent=''):
+    if self.isC:
+      return
+    if self.addr in seen:
+      return
+    seen.add(self.addr)
+
+    # print(f'{indent}PROTO${self.proto.addr:08X}')
+    print(f'{indent}FENV: {self.fenv}')
+    # self.fenv.dump(seen, indent + '  ')
+    for i in range(self.proto.sizek):
+      print(f'{indent}CONST${self.proto.k + i*8:08X} {self.proto.klist[i]}')
+      # print(indent, 'CONST', i, self.proto.k + i*8)
+
+    # they all seem to be nil
+    # upvs = pcsx2.peek32(address + 20)
+    # for i in range(nups):
+    #   upv = pcsx2.peek32(upvs + i*4)
+    #   obj = pcsx2.peek32(upv + 8)
+    #   print('%sUPVAL %s' % (indent, str_tobject(obj)))
+    # dump_gclist(pcsx2.peek32(address + 64), indent, seen)
+
+  class Proto:
+    def __init__(self, pine, addr):
+      self.addr = addr
+      self.k = pine.peek32(addr + 8)
+      self.sizek = pine.peek32(addr + 40)
+      self.klist = [
+        TObject(pine, self.k + i*8)
+        for i in range(self.sizek)
+      ]
+
 
 class Lua_GCUserdata(Lua_GCObject):
   def __init__(self, pine, addr):
@@ -84,6 +127,11 @@ class Lua_GCUserdata(Lua_GCObject):
 
   def __str__(self):
     return 'userdata$%08X[size=%d,mt=%s]' % (self.addr, self.size, self.metatable)
+
+  def dump(self, seen, indent = ''):
+    # Don't know any internal structure to dump
+    # Maybe dump the first 64 bytes someday or something
+    return
 
 class Lua_GCThread(Lua_GCObject):
   def __init__(self, pine, addr):
@@ -114,10 +162,20 @@ LUA_GCTYPES = [
 ]
 
 
+_CACHE = {}
+
 def TObject(pine, addr):
-  tt = pine.peek32(addr)
-  return LUA_TYPES[tt](pine, addr)
+  if addr not in _CACHE:
+    tt = pine.peek32(addr)
+    # print('%x' % addr, tt)
+    assert tt < len(LUA_TYPES), f'Unknown type {tt} constructing TObject${addr:08X}'
+    _CACHE[addr] = LUA_TYPES[tt](pine, addr)
+  return _CACHE[addr]
 
 def GCObject(pine, addr):
-  tt = pine.peek8(addr+4)
-  return LUA_GCTYPES[tt](pine, addr)
+  if addr not in _CACHE:
+    tt = pine.peek8(addr+4)
+    # print('%x' % addr, tt)
+    assert tt < len(LUA_GCTYPES), f'Unknown type {tt} constructing GCObject${addr:08X}'
+    _CACHE[addr] = LUA_GCTYPES[tt](pine, addr)
+  return _CACHE[addr]
