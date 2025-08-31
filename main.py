@@ -81,7 +81,9 @@ def dump_function(address, indent='', seen=None):
   k = pcsx2.peek32(proto + 8)
   sizek = pcsx2.peek32(proto + 40)
   for i in range(sizek):
-    print('%sCONST' % indent, str_tobject(k + i*8))
+    print('%sCONST$%08X' % (indent, k+i*8), str_tobject(k + i*8))
+
+  dump_gclist(pcsx2.peek32(address + 64), indent, seen)
 
 def dump_node(address, indent='', seen=None):
   ktype = ltypes[pcsx2.peek32(address)]
@@ -96,6 +98,13 @@ def dump_node(address, indent='', seen=None):
   # next = pcsx2.peek32(address + 16)
   # if next > 0:
   #   dump_node(next, indent)
+
+def dump_gclist(address, indent='', seen=None):
+  return
+  while address != 0:
+    print('%s[GC] %s' % (indent, str_gcobject(address)))
+    address = pcsx2.peek32(address)
+
 
 _METATABLE = None
 def dump_table(address, indent='', seen=None):
@@ -125,6 +134,12 @@ L = pcsx2.peek32(0x0056CBD0)
 print('L is at: $%08X' % L)
 peek8assert(L + 0x04, 8, 'L must be LUA_TTHREAD')
 peek8assert(L + 0x40, 5, 'L->gt must be LUA_TTABLE')
+
+stack = pcsx2.peek32(L + 0x1C)
+stacksize = pcsx2.peek32(L + 0x20)
+# top = pcsx2.peek32(L + 0x08)
+for i in range(stacksize):
+  print('[STACK$%08X]' % (stack+i*8), str_tobject(stack+i*8))
 
 l_G = pcsx2.peek32(L + 0x10)
 print('l_G is at: $%08X' % l_G)
