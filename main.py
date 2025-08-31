@@ -25,5 +25,4 @@ L = GCObject(pcsx2, Lptr)
 assert L.tt == 8, 'L must be LUA_TTHREAD'
 assert L._G.tt == 5, 'L->gt must be LUA_TTABLE'
 
-seen = set()
-L.dump(seen, '')
+L.dump({}, '')

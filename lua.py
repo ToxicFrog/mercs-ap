@@ -110,14 +110,19 @@ class Lua_GCTable(Lua_GCObject):
       for i in range(self.hash_size)
     ]
 
-
   def __str__(self):
     return 'table$%08X[a=%d,h=%d]' % (self.addr, self.array_size, self.hash_size)
+
+  def hasMetatable(self, seen):
+    return (
+      self.metatable is not None
+      and self.metatable.tt != 0
+      and self.metatable.addr != seen['_METATABLE'])
 
   def dump(self, seen, indent=''):
     if self.addr in seen:
       return
-    seen.add(self.addr)
+    seen[self.addr] = self
 
     for i,v in enumerate(self.array):
       if v is None or v.tt == 0:
@@ -130,8 +135,8 @@ class Lua_GCTable(Lua_GCObject):
         continue
       node.dump(seen, indent)
 
-    if self.metatable and not isinstance(self.metatable, Lua_Nil):
-      print(f'{indent}[META] {self.metatable}')
+    if self.hasMetatable(seen):
+      print(f'{indent}META: {self.metatable}')
       self.metatable.dump(seen, indent + '  ')
 
 
@@ -168,14 +173,14 @@ class Lua_GCFunction(Lua_GCObject):
       return
     if self.addr in seen:
       return
-    seen.add(self.addr)
+    seen[self.addr] = self
 
     # print(f'{indent}PROTO${self.proto.addr:08X}')
-    print(f'{indent}FENV: {self.fenv}')
-    # self.fenv.dump(seen, indent + '  ')
+    if self.fenv.val.addr != seen['_G']:
+      print(f'{indent}FENV: {self.fenv}')
+      self.fenv.dump(seen, indent + '  ')
     for i in range(self.proto.sizek):
       print(f'{indent}CONST${self.proto.k + i*8:08X} {self.proto.klist[i]}')
-      # print(indent, 'CONST', i, self.proto.k + i*8)
 
     # they all seem to be nil
     # upvs = pcsx2.peek32(address + 20)
@@ -231,6 +236,9 @@ class Lua_GCThread(Lua_GCObject):
     return 'thread$%08X' % self.addr
 
   def dump(self, seen, indent=''):
+    seen['_METATABLE'] = self._METATABLE.val.addr
+    seen['_G'] = self._G.val.addr
+
     print(f'{indent}STACK:')
     for obj in self.stack:
       print(f'{indent}- {obj}')
