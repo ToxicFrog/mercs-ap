@@ -204,17 +204,47 @@ class Lua_GCUserdata(Lua_GCObject):
 class Lua_GCThread(Lua_GCObject):
   def __init__(self, pine, addr):
     super().__init__(pine, addr)
-    self.stack = pine.peek32(addr + 0x1C)
+    print(f'Loading lua_State${addr:08X}')
+
+    self.stackbase = pine.peek32(addr + 0x1C)
     self.stacksize = pine.peek32(addr + 0x20)
-    self.top = pine.peek32(addr + 0x08)
+    self.stacktop = pine.peek32(addr + 0x08)
+    self.stack = [
+      TObject(pine, self.stackbase + i*8)
+      for i in range((self.stacktop - self.stackbase)//8)
+    ]
+    print(f'- stack: {self.stackbase:08X}..{self.stacktop:08X} (capacity: {self.stacksize})')
+
     # TODO: read stack into list of TObject
     # global state shared across threads, like the string table
     # TODO: implement actual class for this with default_metatable and registry fields
     self.l_G = pine.peek32(addr + 0x10)
+    print(f'- shared global state: ${self.l_G:08X}')
     self._G = TObject(pine, addr + 0x40)
+    print(f'- globals: {self._G}')
+    self._REGISTRY = TObject(pine, self.l_G + 0x38)
+    print(f'- registry: {self._REGISTRY}')
+    self._METATABLE = TObject(pine, self.l_G + 0x40)
+    print(f'- default metatable: {self._METATABLE}')
 
   def __str__(self):
     return 'thread$%08X' % self.addr
+
+  def dump(self, seen, indent=''):
+    print(f'{indent}STACK:')
+    for obj in self.stack:
+      print(f'{indent}- {obj}')
+      obj.dump(seen, indent + '    ')
+
+    print(f'{indent}_METATABLE: {self._METATABLE}')
+    self._METATABLE.dump(seen, indent + '  ')
+
+    print(f'{indent}_REGISTRY: {self._REGISTRY}')
+    self._REGISTRY.dump(seen, indent + '  ')
+
+    print(f'{indent}_G: {self._G}')
+    self._G.dump(seen, indent + '  ')
+
 
 # Implementations of TObject
 LUA_TYPES = [
