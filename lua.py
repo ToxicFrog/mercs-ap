@@ -243,17 +243,22 @@ class Lua_GCFunction(Lua_GCObject):
 class Lua_GCUserdata(Lua_GCObject):
   def __init__(self, pine, addr):
     super().__init__(pine, addr)
-    self.metatable = Lua_GCTable(pine.peek32(addr+8))
+    self.metatable = Lua_GCTable(pine, pine.peek32(addr+8))
     self.size = pine.peek32(addr+12)
     # self.data = pine.readmem(addr+16, self.size)
 
   def __str__(self):
     return 'userdata$%08X[size=%d,mt=%s]' % (self.addr, self.size, self.metatable)
 
+  def hasMetatable(self, seen):
+    return (
+      self.metatable is not None
+      and self.metatable.tt != 0
+      and self.metatable.addr != seen['_METATABLE'])
+
   def dump(self, seen, indent = ''):
-    # Don't know any internal structure to dump
-    # Maybe dump the first 64 bytes someday or something
-    return
+    if self.hasMetatable(seen):
+      self.metatable.dump(seen, indent + '  ')
 
 class Lua_GCThread(Lua_GCObject):
   def __init__(self, pine, addr):
