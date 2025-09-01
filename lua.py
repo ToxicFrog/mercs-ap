@@ -110,6 +110,14 @@ class Lua_GCTable(Lua_GCObject):
       self.v = TObject(pine, addr+8)
       self.next = pine.peek32(addr+16)
 
+    def keyEq(self, val):
+      if self.k is None:
+        return False
+      if type(val) == int:
+        return self.k.tt == LUA_TNUMBER and self.k.val == val
+      if type(val) == bytes:
+        return self.k.tt == LUA_TSTRING and self.k.val.data == val
+
     def dump(self, seen, indent=''):
       if self.k is None or self.v is None:
         return
@@ -149,6 +157,20 @@ class Lua_GCTable(Lua_GCObject):
 
   def __str__(self):
     return 'table$%08X[a=%d,h=%d]' % (self.addr, self.array_size, self.hash_size)
+
+  def getfield(self, key):
+    self.lazyLoad()
+    if type(key) == int and key < self.array_size:
+      return self.array[key]
+
+    if type(key) == str:
+      key = key.encode()
+
+    for node in self.hash:
+      if node.keyEq(key):
+        return node.v
+
+    return None
 
   def hasMetatable(self, seen):
     return (
@@ -295,10 +317,16 @@ class Lua_GCThread(Lua_GCObject):
   def __str__(self):
     return 'thread$%08X' % self.addr
 
-  def dump(self, seen, indent=''):
-    seen['_METATABLE'] = self._METATABLE.val.addr
-    seen['_G'] = self._G.val.addr
+  def getglobal(self, str):
+    return self._G.val.getfield(str)
 
+  def initialSeen(self):
+    return {
+      '_METATABLE': self._METATABLE.val.addr,
+      '_G': self._G.val.addr,
+    }
+
+  def dump(self, seen, indent=''):
     self.lazyLoad()
     print(f'{indent}STACK:')
     for obj in self.stack:
