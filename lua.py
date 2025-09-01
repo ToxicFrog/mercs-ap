@@ -154,7 +154,7 @@ class Lua_GCTable(Lua_GCObject):
     return (
       self.metatable is not None
       and self.metatable.tt != 0
-      and self.metatable.addr != seen['_METATABLE'])
+      and self.metatable.addr != seen.get('_METATABLE', None))
 
   def dump(self, seen, indent=''):
     if self.addr in seen:
@@ -197,6 +197,7 @@ class Lua_GCFunction(Lua_GCObject):
 
   def __init__(self, pine, addr):
     super().__init__(pine, addr)
+    self.name = None
     self.isC = pine.peek8(addr + 6) != 0
     self.nups = pine.peek8(addr + 7)
     if self.isC:
@@ -208,9 +209,9 @@ class Lua_GCFunction(Lua_GCObject):
 
   def __str__(self):
     if self.isC:
-      return 'cfunction$%08X[%d]' % (self.cfunction, self.nups)
+      return f'cfunction${self.cfunction:08X}{self.nups and f'[{self.nups}]' or ''}{self.name and f' {self.name}' or ''}'
     else:
-      return 'function$%08X[%d]' % (self.addr, self.nups)
+      return f'function${self.addr:08X}{self.nups and f'[{self.nups}]' or ''}{self.name and f' {self.name}' or ''}'
 
   def dump(self, seen, indent=''):
     if self.isC:
@@ -220,7 +221,7 @@ class Lua_GCFunction(Lua_GCObject):
     seen[self.addr] = self
 
     # print(f'{indent}PROTO${self.proto.addr:08X}')
-    if self.fenv.val.addr != seen['_G']:
+    if self.fenv.val.addr != seen.get('_G', None):
       print(f'{indent}FENV: {self.fenv}')
       self.fenv.dump(seen, indent + '  ')
     for i in range(self.proto.sizek):
