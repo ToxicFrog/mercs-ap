@@ -2,6 +2,16 @@ from lopcode import LuaOpcode
 
 _CACHE = {}
 
+LUA_TNIL = 0
+LUA_TBOOL = 1
+LUA_TPOINTER = 2
+LUA_TNUMBER = 3
+LUA_TSTRING = 4
+LUA_TTABLE = 5
+LUA_TFUNCTION = 6
+LUA_TUSERDATA = 7
+LUA_TTHREAD = 8
+
 class Lua_TObject:
   def __init__(self, pine, addr):
     _CACHE[addr] = self
@@ -38,11 +48,26 @@ class Lua_Number(Lua_TObject):
 class Lua_TObjectGC(Lua_TObject):
   def __init__(self, pine, addr):
     super().__init__(pine, addr)
-    self.val = GCObject(pine, self.val)
-    assert self.tt == self.val.tt
+    gcaddr = self.val
+    self.val = GCObject(pine, gcaddr)
+    if self.val is None:
+      self.val = Lua_CorruptGCObject(gcaddr, None)
+    elif self.tt != self.val.tt:
+      self.val = Lua_CorruptGCObject(gcaddr, self.val.tt)
 
   def dump(self, seen, indent=''):
     return self.val.dump(seen, indent)
+
+class Lua_CorruptGCObject:
+  def __init__(self, addr, tt):
+    self.addr = addr
+    self.tt = tt
+
+  def __str__(self):
+    return f'<<corrupt gcobject${self.addr:08X} tt={self.tt}'
+
+  def dump(self, seen, indent=''):
+    return
 
 class Lua_GCObject:
   def __init__(self, pine, addr):
@@ -71,7 +96,12 @@ class Lua_GCTable(Lua_GCObject):
   class Node:
     def __init__(self, pine, addr):
       self.addr = addr
-      self.k = TObject(pine, addr)
+      try:
+        self.k = TObject(pine, addr)
+      except:
+        self.k = None
+        self.v = None
+        return
       if self.k is None or isinstance(self.k, Lua_Nil):
         self.v = None
         self.next = None
@@ -80,7 +110,7 @@ class Lua_GCTable(Lua_GCObject):
       self.next = pine.peek32(addr+16)
 
     def dump(self, seen, indent=''):
-      if self.v is None:
+      if self.k is None or self.v is None:
         return
       print('%s[Node$%08X] %s: %s' % (indent, self.addr, self.k, self.v))
       self.k.dump(seen, indent + 'K ')
@@ -126,13 +156,13 @@ class Lua_GCTable(Lua_GCObject):
     seen[self.addr] = self
 
     for i,v in enumerate(self.array):
-      if v is None or v.tt == 0:
+      if v is None or v.tt == LUA_TNIL:
         continue
       print(f'{indent}[{i}:${self.array_ptr+i*8:08X}] {v}')
       v.dump(seen, indent + '  ')
 
     for node in self.hash:
-      if node.k is None or node.k.tt == 0:
+      if node.k is None or node.k.tt == LUA_TNIL:
         continue
       node.dump(seen, indent)
 
@@ -286,7 +316,7 @@ def TObject(pine, addr):
   if tt == 0xFFFFFFFF:
     # Removed by garbage collector
     return None
-  # print('%x' % addr, tt)
+  # print('creating tobject', f'{addr:08X} {tt} {pine.peek32(addr+4):08X}')
   assert tt < len(LUA_TYPES), f'Unknown type {tt} constructing TObject${addr:08X}'
   return LUA_TYPES[tt](pine, addr)
 
@@ -297,6 +327,10 @@ def GCObject(pine, addr):
   if tt == 0xFFFFFFFF:
     # Removed by garbage collector
     return None
-  # print('%x' % addr, tt)
+  # print('creating gcobject', f'{addr:08X} {tt}')
   assert tt < len(LUA_GCTYPES), f'Unknown type {tt} constructing GCObject${addr:08X}'
+  if LUA_GCTYPES[tt] is None:
+    # wtf??
+    return None
+  assert LUA_GCTYPES[tt] is not None, f'Attempting to create gcobject${addr:08X} from primitive type {tt}'
   return LUA_GCTYPES[tt](pine, addr)
