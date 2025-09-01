@@ -1,3 +1,4 @@
+from lopcode import LuaOpcode
 
 _CACHE = {}
 
@@ -150,6 +151,12 @@ class Lua_GCFunction(Lua_GCObject):
         TObject(pine, self.k + i*8)
         for i in range(self.sizek)
       ]
+      self.sizecode = pine.peek32(addr + 44)
+      self.codeptr = pine.peek32(addr + 12)
+      self.code = [
+        LuaOpcode(pine.peek32(self.codeptr + i*4))
+        for i in range(self.sizecode)
+      ]
 
   def __init__(self, pine, addr):
     super().__init__(pine, addr)
@@ -181,6 +188,10 @@ class Lua_GCFunction(Lua_GCObject):
       self.fenv.dump(seen, indent + '  ')
     for i in range(self.proto.sizek):
       print(f'{indent}CONST${self.proto.k + i*8:08X} {self.proto.klist[i]}')
+
+    print(f'{indent}CODE ${self.proto.codeptr:08X}')
+    for i,op in enumerate(self.proto.code):
+      print(f'{indent}  {i:4d} {op.op:08X} {op.pprint(self.proto, i)}')
 
     # they all seem to be nil
     # upvs = pcsx2.peek32(address + 20)

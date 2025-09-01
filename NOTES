@@ -267,3 +267,83 @@ _d0xX00579468!=3_0xX00579468=3
 
 
 1A77560 -- player money (is this stable across runs?) in savestate 5. This is a float!
+
+DA38C0 -- I think this is the scribmem block, but writing something to it
+rewrites the whole fucking thing :<
+504c90 holds a pointer to it
+
+writing a string to scribmem
+looks like it gets a useful pointer to $501c88 in s2
+Adds $1008 to get $502c90 in a1
+then does
+  sll v0,v0,1
+
+function fOdfSold()
+  local n = 15
+  if tMafiaShop[_shop_iCurrentItem].template then
+    Shop_UnlockItem(tMafiaShop[_shop_iCurrentItem].template)
+    AddTooltip {
+      sMessage = '[green]' .. Utility_GetStringById(tMafiaShop[_shop_iCurrentItem].desc) .. ' added to shop';
+      nDisplayDuration = 6
+    }
+  else
+    n = 30
+  end
+
+  _shop_iCurrentItem += 1
+  Utility_WriteNumberToScribbleMemory('iCurrentShopItem', _shop_iCurrentItem)
+  Faction_ModifyRelation('mafia', 'prokat', n)
+
+  if tMafiaShop[_shop_iCurrentItem] then
+    hOdfSold = Event_OdfSold('fOdfSold', 'b', tMafiaShop[_shop_iCurrentItem].odf)
+    r1: Utility_GetStringById(tMafiaShop[_shop_iCurrentItem].desc)
+    r2: Utility_GetStringById('faction.' .. tMafiaShop[_shop_iCurrentItem].faction)
+    Utility_WriteStringToScribbleMemory('ShopWantedActorFactionName', 'faction.' .. tMafiaShop[_shop_iCurrentItem].faction)
+    Utility_WriteStringToScribbleMemory('ShopWantedActorTemplateName', tMafiaShop[_shop_iCurrentItem].desc)
+  else
+    Utility_WriteStringToScribbleMemory('ShopWantedActorTemplateName', nil)
+    fShopkeeperKilled()
+
+function fShopkeeperKilled()
+  Ui_RemoveDisplayMarkerActor('mafia_shopkeeper')
+  Actor_EnableScriptedUse('mafia_shopkeeper', false, 'actions.talk', false)
+  hActorUsed = Event_CancelEvent(hActorUsed)
+  hOdfSold = Event_CancelEvent(hOdfSold)
+
+
+To inject a debug logger, we replace util_PrintDebugMsg and Debug_Printf
+  [Node$01A8214C] 'util_PrintDebugMsg' [h=A2961C17,$00A12000]: function$009A2BC0 'util_PrintDebugMsg' [h=A2961C17,$00A12000]
+    CONST$00960990 'bDebugOutput' [h=2660F98C,$009A6CC0]
+    CONST$00960998 'Debug_Printf' [h=445430CF,$0098B6A0]
+    CODE $009974E0
+         0 01000005 GETGLOBAL r1 := _G['bDebugOutput' [h=2660F98C,$009A6CC0]]
+         1 01008018      TEST not r1: r1 := r1 ; or skip
+         2 00800094       JMP +3 ; 6
+         3 01000045 GETGLOBAL r1 := _G['Debug_Printf' [h=445430CF,$0098B6A0]]
+         4 02000000      MOVE r2 := r0
+         5 01010059      CALL r1 (1 args) => 0 results
+         6 0000801B    RETURN r0 ... r-1
+
+replace constant 0 ('bDebugOutput') with 'sDebugBuffer'
+replace constant 1 ('Debug_Printf') with '------------'
+Replace code segment with:
+
+  GETGLOBAL r1, 'sDebugBuffer'
+  MOVE r2 := r0
+  CONCAT r1, r1 .. r2
+  SETGLOBAL r1, 'sDebugBuffer'
+  MOVE r0, r0
+  MOVE r0, r0
+  RETURN
+
+Problem: this fails if sDebugBuffer is nil, since you can't concat nil and string
+The traditional solution to this is a test-and-set, but the implementation of test
+assumes the instruction after it is always a jump, and will crash the VM if it's not
+
+Might be able to replace the code segment of table_debug instead, that's a table
+prettyprinter and gives me 84 instructions to work with.
+
+In that case, I can ultimately replace it with something that, every time a debug
+message is logged, instead updates a data structure in memory with information
+about which things have been checked, using Utility_ReadFooFromScribbleMemory.
+
