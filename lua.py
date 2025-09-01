@@ -72,6 +72,7 @@ class Lua_CorruptGCObject:
 class Lua_GCObject:
   def __init__(self, pine, addr):
     _CACHE[addr] = self
+    self.pine = pine
     self.addr = addr
     self.next = pine.peek32(addr)
     self.tt = pine.peek8(addr+4)
@@ -128,18 +129,23 @@ class Lua_GCTable(Lua_GCObject):
 
     self.array_size = pine.peek32(addr + 0x1C)
     self.array_ptr = pine.peek32(addr + 0x0C)
-    self.array = [
-      TObject(pine, self.array_ptr + i*8)
-      for i in range(self.array_size)
-    ]
-
     self.hash_size = 2 ** pine.peek8(addr + 0x07)
     self.hash_ptr = pine.peek32(addr + 0x10)
+    self.array = None
+    self.hash = None
 
-    self.hash = [
-      self.Node(pine, self.hash_ptr + i*20)
-      for i in range(self.hash_size)
-    ]
+  def lazyLoad(self):
+    if self.array is None:
+      self.array = [
+        TObject(self.pine, self.array_ptr + i*8)
+        for i in range(self.array_size)
+      ]
+
+    if self.hash is None:
+      self.hash = [
+        self.Node(self.pine, self.hash_ptr + i*20)
+        for i in range(self.hash_size)
+      ]
 
   def __str__(self):
     return 'table$%08X[a=%d,h=%d]' % (self.addr, self.array_size, self.hash_size)
@@ -154,6 +160,7 @@ class Lua_GCTable(Lua_GCObject):
     if self.addr in seen:
       return
     seen[self.addr] = self
+    self.lazyLoad()
 
     for i,v in enumerate(self.array):
       if v is None or v.tt == LUA_TNIL:
@@ -273,6 +280,12 @@ class Lua_GCThread(Lua_GCObject):
     self._METATABLE = TObject(pine, self.l_G + 0x40)
     print(f'- default metatable: {self._METATABLE}')
 
+  def lazyLoad(self):
+    self._G.val.lazyLoad()
+    for node in self._G.val.hash:
+      if node.k is not None and node.k.tt == LUA_TSTRING and node.v.tt == LUA_TFUNCTION:
+        node.v.val.name = node.k
+
   def __str__(self):
     return 'thread$%08X' % self.addr
 
@@ -280,6 +293,7 @@ class Lua_GCThread(Lua_GCObject):
     seen['_METATABLE'] = self._METATABLE.val.addr
     seen['_G'] = self._G.val.addr
 
+    self.lazyLoad()
     print(f'{indent}STACK:')
     for obj in self.stack:
       print(f'{indent}- {obj}')
