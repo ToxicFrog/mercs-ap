@@ -292,7 +292,7 @@ class Lua_GCThread(Lua_GCObject):
     self.stacktop = pine.peek32(addr + 0x08)
     self.stack = [
       TObject(pine, self.stackbase + i*8)
-      for i in range((self.stacktop - self.stackbase)//8)
+      for i in range((self.stacktop - self.stackbase)//8 + 1)
     ]
     print(f'- stack: {self.stackbase:08X}..{self.stacktop:08X} (capacity: {self.stacksize})')
 
