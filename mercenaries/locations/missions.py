@@ -91,17 +91,17 @@ MISSIONS = {
     # We list these out explicitly because AN missions include the tutorial and
     # ace missions, which require special handling
     [
-      MissionLocation(next_id(), 0, 0, 'A', 1, AN_MISSION_NAMES[0]),
-      MissionLocation(next_id(), 0, 0, 'A', 2, AN_MISSION_NAMES[1], {'A1', 'K1', 'M1', 'C1'}),
-      MissionLocation(next_id(), 0, 0, 'A', 3, AN_MISSION_NAMES[2], {'A2'}, True),
-      MissionLocation(next_id(), 0, 0, 'A', 4, AN_MISSION_NAMES[3], {'A3'}),
-      MissionLocation(next_id(), 0, 0, 'A', 5, AN_MISSION_NAMES[4], {'A4'}),
-      MissionLocation(next_id(), 0, 0, 'A', 6, AN_MISSION_NAMES[5], {'A5'}, True),
-      MissionLocation(next_id(), 0, 0, 'A', 7, AN_MISSION_NAMES[6], {'A6'}),
-      MissionLocation(next_id(), 0, 0, 'A', 8, AN_MISSION_NAMES[7], {'A7'}),
-      MissionLocation(next_id(), 0, 0, 'A', 9, AN_MISSION_NAMES[8], {'A8'}, True),
-      MissionLocation(next_id(), 0, 0, 'A', 10, AN_MISSION_NAMES[9], {'A9'}),
-      MissionLocation(next_id(), 0, 0, 'A', 11, AN_MISSION_NAMES[10], {'A10'}, True),
+      MissionLocation(next_id(), 0, 4, 'A', 1, AN_MISSION_NAMES[0]),
+      MissionLocation(next_id(), 1, 4, 'A', 2, AN_MISSION_NAMES[1], {'A1', 'K1', 'M1', 'C1'}),
+      MissionLocation(next_id(), 1, 4, 'A', 3, AN_MISSION_NAMES[2], {'A2'}, True),
+      MissionLocation(next_id(), 2, 4, 'A', 4, AN_MISSION_NAMES[3], {'A3'}),
+      MissionLocation(next_id(), 2, 4, 'A', 5, AN_MISSION_NAMES[4], {'A4'}),
+      MissionLocation(next_id(), 2, 4, 'A', 6, AN_MISSION_NAMES[5], {'A5'}, True),
+      MissionLocation(next_id(), 3, 4, 'A', 7, AN_MISSION_NAMES[6], {'A6'}),
+      MissionLocation(next_id(), 3, 4, 'A', 8, AN_MISSION_NAMES[7], {'A7'}),
+      MissionLocation(next_id(), 3, 4, 'A', 9, AN_MISSION_NAMES[8], {'A8'}, True),
+      MissionLocation(next_id(), 4, 4, 'A', 10, AN_MISSION_NAMES[9], {'A9'}),
+      MissionLocation(next_id(), 4, 4, 'A', 11, AN_MISSION_NAMES[10], {'A10'}, True),
     ],
     # SK missions
     # T1 and T2 missions for SK and Mafia are listed explicitly because they don't
