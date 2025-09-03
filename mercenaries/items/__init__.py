@@ -88,8 +88,26 @@ class CardIntelItem(NamedTuple):
     return {'intel', 'progression'}
 
 
+class MoneyItem(NamedTuple):
+  id: int
+  amount: int
+
+  def name(self):
+    return f'${self.amount:,d}'
+
+  def count(self, options):
+    return 0
+
+  def classification(self):
+    return ItemClassification.filler
+
+  def groups(self):
+    return {'money', 'filler'}
+
+
 CARD_INTEL = set()
 GENERIC_INTEL = set()
+MONEY = {MoneyItem(next_id(), amount) for amount in [50_000, 100_000, 250_000, 500_000]}
 global ITEMS_BY_NAME
 
 def name_to_id_map():
@@ -105,7 +123,7 @@ def group_to_names_map():
   return groups
 
 def all_items():
-  return chain(CARD_INTEL, GENERIC_INTEL)
+  return chain(CARD_INTEL, GENERIC_INTEL, MONEY)
 
 def all_progression_items():
   return all_items()

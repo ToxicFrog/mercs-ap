@@ -98,7 +98,7 @@ class MercenariesWorld(World):
     return MercenariesItem(self, items.item_by_name(name))
 
   def create_filler(self):
-    return self.create_item('Progressive Ace Intel')
+    return self.create_item('$50,000')
 
   def generate_early(self) -> None:
     ut_config = getattr(self.multiworld, 're_gen_passthrough', {}).get(self.game, None)
