@@ -191,7 +191,7 @@ class MercenariesWorld(World):
       if 'progression' in item.groups() and state.has(item.name(), self.player))
 
   def has_intel_for_chapter(self, state, chapter):
-    suit = ['clubs', 'diamonds', 'hearts', 'spades'][chapter]
+    suit = ['clubs', 'diamonds', 'hearts', 'spades'][chapter-1]
     intel = sum(
       item.intel_amount()
       for item in items.all_items()
