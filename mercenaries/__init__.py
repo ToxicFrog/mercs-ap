@@ -112,7 +112,7 @@ class MercenariesWorld(World):
     token = f'{first.name} Complete'
     first.locations.append(MercenariesEvent(
       world=self,
-      event_name=f'Finish {first.name} via {mission.short_name()} "{mission.title}"',
+      event_name=f'Finish {first.name} via {mission.short_name()}',
       token_name=token,
       region=first,
       rule=mission.access_rule(self)))
