@@ -163,6 +163,8 @@ class MercenariesWorld(World):
     slots_left = self.location_count
 
     for item in items.all_progression_items():
+      if item.count(self.options) > 0:
+        print(item.count(self.options), item.name())
       for _ in range(item.count(self.options)):
         self.multiworld.itempool.append(self.create_item(item.name()))
         slots_left -= 1
@@ -190,13 +192,45 @@ class MercenariesWorld(World):
     print('interpret_slot_data', slot_data)
     return slot_data
 
-  def power_level(self, state):
-    return sum(
-      1
-      for item in items.all_items()
-      if 'progression' in item.groups() and state.has(item.name(), self.player))
+  def has_combat_power_for_rank(self, state, rank):
+    '''
+    Figure out if the player has enough combat power for missions of the given
+    rank. We base this entirely on shop unlocks, on the assumption that if the
+    player needs more money they can do challenges or collect NK vehicle bounties.
+
+    R1 missions are free, every rank after that increases the number of shop items
+    needed by 3, capping at 36 at R12, or about half of the total unlocks and a
+    bit less than what you'd have at that point in normal play if you missed
+    every optional objective.
+
+    From R3 onwards we additionally require that the player have a balanced
+    amount of vehicles, supplies, and airstrikes, scaling from 1 of each at
+    R3 to 7 of each at R12, to prevent this from saying things are a-ok if (e.g.)
+    the player has lots of supplies available but no vehicles or airstrikes.
+    '''
+    vehicles = sum(
+      1 for item in items.all_items_in_groups({'shop', 'vehicle'})
+      if state.has(item.name(), self.player))
+    supplies = sum(
+      1 for item in items.all_items_in_groups({'shop', 'supplies'})
+      if state.has(item.name(), self.player))
+    airstrikes = sum(
+      1 for item in items.all_items_in_groups({'shop', 'airstrike'})
+      if state.has(item.name(), self.player))
+    shop = vehicles + supplies + airstrikes
+    target = (rank-1)*3
+
+    return (
+      shop >= (rank-1)*3
+      and (vehicles >= target//5)
+      and (supplies >= target//5)
+      and (airstrikes >= target//5))
 
   def has_intel_for_chapter(self, state, chapter):
+    '''
+    Figure out if the player has enough intel for the given chapter, based on
+    the yaml options.
+    '''
     if self.options.vanilla_intel:
       target = self.options.vanilla_intel_target
     else:
@@ -210,7 +244,7 @@ class MercenariesWorld(World):
 
     intel = sum(
       item.intel_amount() * state.count(item.name(), self.player)
-      for item in items.all_items()
-      if 'intel' in item.groups() and item.suit == suit)
+      for item in items.all_items_in_groups({'intel'})
+      if item.suit == suit)
 
     return intel >= target

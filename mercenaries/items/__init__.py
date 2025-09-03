@@ -26,6 +26,7 @@ from BaseClasses import CollectionState, Item, ItemClassification, Location, Mul
 
 from ..id import next_id
 from .intel import CARD_INTEL, GENERIC_INTEL
+from .shop import SHOP_ITEMS
 
 class MoneyItem(NamedTuple):
   id: int
@@ -47,7 +48,10 @@ class MoneyItem(NamedTuple):
 MONEY = {MoneyItem(next_id(), amount) for amount in [50_000, 100_000, 250_000, 500_000]}
 
 def all_items():
-  return chain(CARD_INTEL, GENERIC_INTEL, MONEY)
+  return chain(CARD_INTEL, GENERIC_INTEL, SHOP_ITEMS, MONEY)
+
+def all_items_in_groups(groups):
+  return (item for item in all_items() if item.groups() >= groups)
 
 ITEMS_BY_NAME = {
   item.name(): item
