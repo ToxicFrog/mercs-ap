@@ -60,7 +60,7 @@ class Pine:
       return buf + self.pack(*args)
 
   def unpack_empty(self, data: bytes):
-    assert bytes == b'', 'Non-empty response!'
+    assert data == b'', f'Non-empty response: {data}'
     return None
 
   def unpack_string(self, data: bytes):
@@ -106,6 +106,9 @@ class Pine:
   def poke64(self, addr, n):
     return self.command(0x07, self.unpack_empty, self.pack(32, addr, 64, n))
 
+  def pokef32(self, addr, n):
+    return self.command(0x06, self.unpack_empty, self.pack(32, addr) + struct.pack('< f', n))
+
   def readmem(self, addr, size):
     buf = b''
     while size >= 8:
@@ -117,6 +120,16 @@ class Pine:
       addr += 1
       size -= 1
     return buf
+
+  def writemem(self, addr, data):
+    while len(data) >= 8:
+      self.command(0x07, self.unpack_empty, self.pack(32, addr) + data[:8])
+      addr += 8
+      data = data[8:]
+    while len(data) > 0:
+      self.command(0x04, self.unpack_empty, self.pack(32, addr) + data[:1])
+      addr += 1
+      data = data[1:]
 
   def readstring(self, addr, size):
     return self.readmem(addr, size).decode(errors='replace')

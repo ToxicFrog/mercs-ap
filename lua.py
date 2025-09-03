@@ -15,6 +15,7 @@ LUA_TTHREAD = 8
 class Lua_TObject:
   def __init__(self, pine, addr):
     _CACHE[addr] = self
+    self.pine = pine
     self.addr = addr
     self.tt = pine.peek32(addr)
     self.val = pine.peek32(addr+4)
@@ -40,10 +41,16 @@ class Lua_Pointer(Lua_TObject):
   def __str__(self):
     return 'pointer$%08X' % self.val
 
+  def setval(self, n):
+    self.pine.poke32(self.addr+4, n)
+
 class Lua_Number(Lua_TObject):
   def __init__(self, pine, addr):
     super().__init__(pine, addr)
     self.val = pine.peekf32(addr+4)
+
+  def setval(self, n):
+    self.pine.pokef32(self.addr+4, n)
 
 class Lua_TObjectGC(Lua_TObject):
   def __init__(self, pine, addr):
@@ -57,6 +64,9 @@ class Lua_TObjectGC(Lua_TObject):
 
   def dump(self, seen, indent=''):
     return self.val.dump(seen, indent)
+
+  def setval(self, n):
+    self.pine.poke32(self.addr+4, n)
 
 class Lua_CorruptGCObject:
   def __init__(self, addr, tt):
@@ -89,6 +99,9 @@ class Lua_GCString(Lua_GCObject):
 
   def __str__(self):
     return '%s [h=%08X,$%08X]' % (repr(self.data.decode(errors='replace')), self.hash, self.addr)
+
+  def setData(self, data):
+    self.pine.writemem(self.addr+16, data)
 
   def dump(*args):
     return
@@ -234,6 +247,9 @@ class Lua_GCFunction(Lua_GCObject):
       return f'cfunction${self.cfunction:08X}{self.nups and f'[{self.nups}]' or ''}{self.name and f' {self.name}' or ''}'
     else:
       return f'function${self.addr:08X}{self.nups and f'[{self.nups}]' or ''}{self.name and f' {self.name}' or ''}'
+
+  def getk(self, n):
+    return self.proto.klist[n]
 
   def dump(self, seen, indent=''):
     if self.isC:

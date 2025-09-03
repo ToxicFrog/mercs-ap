@@ -2,6 +2,48 @@
 
 Notes on AP for Mercenaries: Playground of Destruction.
 
+Totals
+ 52 cards
+    4 aces
+   12 face cards
+    1 number
+   35 missable numbers
+ 47 missions
+   11 allies
+   12 SK
+   12 mafia
+   12 china
+ ?? missable bonus objectives
+ 36 collectable thresholds
+    2 monuments - 10 20
+    6 listening posts - 10 20 30 40 50 55
+   14 blueprints 1 5 10 15 20 30 40 50 60 70 80 90 100 110
+   14 treasures 1 5 10 15 20 30 40 50 60 70 80 90 100 110
+135 total not counting individual collectibles
+
+301 collectibles
+   25 monuments
+   56 listening posts
+  110 blueprints
+  110 treasures
+436 total checks with individual collectables
+
+ 63 merchant unlocks
+ 48 intel bonuses
+ 11 skins
+ 13 money bonuses
+135 total items
+
+This is a perfect match if we don't turn on individual collectables or condense
+intel.
+If we do either, we need filler, possibly a lot of it.
+Possible fillers are:
+- money in various amounts
+- discounts for shop items (extra useful if we start the prices high!)
+- faction reputation bonuses
+- health/ammo/grenade refills
+- single-use airstrikes
+
 RA has achievements for "complete 3/6/9/12 missions for [faction]" which we can
 base this on. There appear to be data structures for "what is the index of the
 next mission for this faction".
@@ -24,6 +66,8 @@ RA has leaderboards for these, which we can turn into checks for them.
 
 RA has counter achievements for these, the code is incredibly gnarly but I can
 probably figure it out.
+If I can get it from lua that would probably be more readable, but also, there's
+like 250 of them, which is a pretty big constant table...
 - find collectable [is check]
   - money per
   - reputation per
@@ -347,3 +391,118 @@ In that case, I can ultimately replace it with something that, every time a debu
 message is logged, instead updates a data structure in memory with information
 about which things have been checked, using Utility_ReadFooFromScribbleMemory.
 
+
+gameflow_AttemptAceMissionUnlock
+Debug_EnableDebugMenu
+Utility_GetStringById
+Debug_Break
+bDebugOutput
+            Debug_Printf
+
+
+MOM unlocks are stored at $51EE7C.
+Each one is a struct with the following format:
+struct {
+  uint32_t id;
+  uint32_t price;  // in dollars
+  uint32_t new;    // 1 if the "new!" flag should appear in the shop
+}
+
+The price given is the *baseline* price; it may be increased or decreased in
+practice based on your reputation with the mafia.
+
+Entries can appear in any order depending on when you unlock things.
+ID  Price         Name
+06  50,000        Surgical Strike
+21  25,000        S. Korean K1025 Scout
+29  20,000        Mafia Technical (MG)
+
+ID      Price  Name
+ 0     35,000  Mafia SUV
+ 1     30,000  H3
+ 2    200,000  Air Superiority
+ 3    250,000  Tank Buster
+ 4    300,000  Cruise Missile Strike
+ 5     45,000  Stealth Fighter Attack
+ 6     50,000  Surgical Strike
+ 7     75,000  Gunship Support
+ 8    150,000  Gunship Support II
+ 9    225,000  Gunship Support III
+ A     75,000  Strategic Missile Strike
+ B    350,000  Bunker Buster Bomb
+ C     50,000  Artillery Strike
+ D    100,000  Artillery Barrage
+ E    200,000  Artillery Bombardment
+ F     65,000  Cluster Bomb
+10    500,000  Carpet Bomb
+11      8,000  Covert Supply Drop
+12      6,500  Allies Supply Drop
+13     12,000  Special Weapons Drop
+14      6,000  Chinese Supply Drop
+15      2,500  Medical Supply Drop
+16      7,500  North Korean Supply Drop
+17      4,000  Russian Supply Drop
+18     15,000  Heavy Weapons Drop
+19     40,000  N. Korean BRDM Scout
+1A     75,000  N. Korean BMP APC
+1B     25,000  N. Korean BTR APC
+1C     12,000  N. Korean Sungri Scout
+1D      5,000  Civilian Car
+1E     65,000  Allies UH-60
+1F     95,000  Mafia MD-530
+20     35,000  S. Korean K966 Scout
+21     25,000  S. Korean K1025 Scout
+22     60,000  S. Korean K200 APC
+23     40,000  Allied M1126 APC
+24     10,000  Baggage Car
+25     15,000  Chinese BJ2020 Scout
+26     50,000  Chinese Type 89 APC
+27     25,000  Allied M1025 Scout
+28     30,000  Mafia Technical (AT)
+29     20,000  Mafia Technical (MG)
+2A     35,000  Mafia Technical (GL)
+2B     12,000  Sniper Supply Drop
+2C      8,000  Vehicle Ammo Drop
+2D     13,000  Vehicle Repair Drop
+2E     65,000  N. Korean ZSU-57 Anti-Air
+2F     20,000  Press Truck
+30     35,000  Allied M1027 Anti-Air
+31     10,000  N. Korean Transport
+32     25,000  Civilian Street Racer
+33    100,000  Chinese Type 95 Anti-Air
+34    450,000  Fuel-Air Bomb
+35    115,000  N. Korean MD-500
+36     35,000  Mafia VIP Car
+37     20,000  Chinese Fuel Truck
+38     30,000  Vehicle Support Drop
+39     15,000  Sniper Rifle Drop
+3A     18,000  Anti-Air Rocket Drop
+3B     18,000  Anti-Tank Rocket Drop
+3C     20,000  Advanced Weapons Drop
+3D  1,000,000  Cheat Weapons Drop
+3E      8,000  Demolitions Supply Drop
+
+$51F47C contains additional information:
+struct {
+  uint32_t total_unlocked;  // entries in the unlock array >= this index are ignored
+  uint32_t vehicles_unlocked; // These three are cosmetic only, used for drawing the scrollbar
+  uint32_t supplies_unlocked;
+  uint32_t airstrikes_unlocked;
+  uint32_t last_selected; // index into the unlock array of the currently focused item
+}
+
+
+Intel!
+GetCardIntelValue returns:
+- the number for number cards (so they are worth 2..10 intel points, for a total of 54)
+- iFaceIntel (30) for face cards
+- iAceIntel (0) for aces
+iTargetIntel is set to 80
+iMaxIntel is set to 34, but doesn't seem to be used.
+Assuming these numbers don't change for later chapters.
+
+I can set iTargetIntel to anything and it will appear to work, but is only checked
+when I actually verify a card.
+
+I could perhaps rig the debug logger to call `gameflow_AttemptAceMissionUnlock()` instead.
+`gameflow_GetIntelTotal` is also written in lua and can thus be replaced.
