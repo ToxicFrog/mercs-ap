@@ -107,9 +107,24 @@ class MercenariesWorld(World):
       # for opt in ut_config:
       #   getattr(self.options, opt).value = ut_config[opt]
 
+  def connect_chapters(self, first, second, mission):
+    mission = locations.mission(mission)
+    token = f'{first.name} Complete'
+    first.locations.append(MercenariesEvent(
+      world=self,
+      event_name=f'Finish {first.name} via {mission.short_name()} "{mission.title}"',
+      token_name=token,
+      region=first,
+      rule=mission.access_rule(self)))
+
+    first.connect(
+      connecting_region=second,
+      name=f'"{mission.name()} Clear',
+      rule=lambda state: state.has(token, self.player))
+
   def create_regions(self) -> None:
     menu_region = Region('Menu', self.player, self.multiworld)
-    self.multiworld.regions.append(menu_region)
+    credits_region = Region('Credits', self.player, self.multiworld)
     chapters = [
       Region('Tutorial', self.player, self.multiworld),
       Region('Chapter 1', self.player, self.multiworld),
@@ -117,46 +132,23 @@ class MercenariesWorld(World):
       Region('Chapter 3', self.player, self.multiworld),
       Region('Chapter 4', self.player, self.multiworld),
     ]
+    self.multiworld.regions.extend([menu_region, credits_region] + chapters)
 
-    # TODO: this works, but we should probably add interstitial events between
-    # chapters so that spoiler walkthrough is clearer on when it expects you to
-    # complete a chapter.
     menu_region.connect(
       connecting_region=chapters[0],
       name='New Game',
       rule=lambda _: True)
 
-    chapters[0].connect(
-      connecting_region=chapters[1],
-      name='"Ante Up" Clear',
-      rule=lambda _: True)
-
-    chapters[1].connect(
-      connecting_region=chapters[2],
-      name='"Bringing Down the House" Clear',
-      rule=locations.mission('A3').access_rule(self))
-
-    chapters[2].connect(
-      connecting_region=chapters[3],
-      name='"The Guns of Kirin-Do" Clear',
-      rule=locations.mission('A6').access_rule(self))
-
-    chapters[3].connect(
-      connecting_region=chapters[4],
-      name='"Gambit" Clear',
-      rule=locations.mission('A9').access_rule(self))
+    self.connect_chapters(chapters[0], chapters[1], 'A1')
+    self.connect_chapters(chapters[1], chapters[2], 'A3')
+    self.connect_chapters(chapters[2], chapters[3], 'A6')
+    self.connect_chapters(chapters[3], chapters[4], 'A9')
+    self.connect_chapters(chapters[4], credits_region, 'A11')
 
     for location in locations.all_locations():
       chapter = chapters[location.min_chapter]
       chapter.locations.append(MercenariesLocation(self, location, chapter))
       self.location_count += 1
-
-    chapters[3].locations.append(MercenariesEvent(
-      world=self,
-      event_name='"The Ace of Spades" Clear',
-      token_name='Victory',
-      region=chapters[3],
-      rule=locations.mission('A11').access_rule(self)))
 
   def create_items(self) -> None:
     slots_left = self.location_count
@@ -174,7 +166,8 @@ class MercenariesWorld(World):
   def set_rules(self):
     # All region and location access rules were defined in create_regions, so we just need the
     # overall victory condition here.
-    self.multiworld.completion_condition[self.player] = lambda state: state.has('Victory', self.player)
+    # TODO: Use options to select what the victory condition is.
+    self.multiworld.completion_condition[self.player] = lambda state: state.has('Chapter 4 Complete', self.player)
 
   def fill_slot_data(self):
     return {}

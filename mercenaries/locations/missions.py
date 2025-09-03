@@ -47,8 +47,8 @@ class MissionLocation(NamedTuple):
       if world.power_level(state) < (self.rank-1)*3:
         return False
 
-      if self.is_ace:
-        return world.has_intel_for_chapter(state, self.min_chapter)
+      if self.is_ace and not world.has_intel_for_chapter(state, self.min_chapter):
+        return False
 
       return True
 
