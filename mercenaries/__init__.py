@@ -197,11 +197,17 @@ class MercenariesWorld(World):
       if 'progression' in item.groups() and state.has(item.name(), self.player))
 
   def has_intel_for_chapter(self, state, chapter):
-    suit = ['clubs', 'diamonds', 'hearts', 'spades'][chapter-1]
+    target = self.options.intel_in_pool_per_ace and self.options.intel_target_per_ace or 80
+
+    if self.options.progressive_intel:
+      suit = None
+      target *= chapter
+    else:
+      suit = ['clubs', 'diamonds', 'hearts', 'spades'][chapter-1]
+
     intel = sum(
-      item.intel_amount()
+      item.intel_amount() * state.count(item.name(), self.player)
       for item in items.all_items()
-      if 'intel' in item.groups()
-      and (item.suit is None or item.suit == suit)
-      and state.has(item.name(), self.player))
-    return intel >= 80
+      if 'intel' in item.groups() and item.suit == suit)
+
+    return intel >= target

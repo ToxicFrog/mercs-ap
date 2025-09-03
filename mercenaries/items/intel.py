@@ -18,7 +18,19 @@ class GenericIntelItem(NamedTuple):
       return 'Progressive Intel'
 
   def count(self, options):
-    return 0
+    if options.intel_in_pool_per_ace == 0:
+      # Vanilla intel behaviour enabled, we will populate the pool with
+      # CardIntelItems instead.
+      return 0
+
+    if bool(self.suit) == bool(options.progressive_intel):
+      # Suited intel is not included in progressive intel mode, and vice versa.
+      return 0
+
+    if options.progressive_intel:
+      return options.intel_in_pool_per_ace * options.goal
+    else:
+      return options.intel_in_pool_per_ace
 
   def intel_amount(self):
     return 1
@@ -38,17 +50,22 @@ class CardIntelItem(NamedTuple):
   def name(self):
     if self.suit:
       return f'{self.suit.capitalize()} Intel [{self.rank_names[self.rank]}]'
-    elif self.rank > 10:
-      return f'Progressive Intel [Face]'
     else:
       return f'Progressive Intel [{self.rank_names[self.rank]}]'
 
   def count(self, options):
-    if not self.suit:
+    if options.intel_in_pool_per_ace > 0:
+      # Intel tokens rather than vanilla intel behaviour.
       return 0
-    if suit_to_chapter(self.suit) <= options.goal:
-      return 1
-    return 0
+
+    if bool(self.suit) == bool(options.progressive_intel):
+      # Suited intel is not included in progressive intel mode, and vice versa.
+      return 0
+
+    if options.progressive_intel:
+      return 4 # 4 copies of each one
+    else:
+      return 1 # 1 copy of each × 4 suits
 
   # TODO: double check if these are the same numbers for later chapters
   def intel_amount(self):
