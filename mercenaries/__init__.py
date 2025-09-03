@@ -108,8 +108,8 @@ class MercenariesWorld(World):
     ut_config = getattr(self.multiworld, 're_gen_passthrough', {}).get(self.game, None)
     if ut_config:
       print('Doing Universal Tracker worldgen with settings:', ut_config)
-      # for opt in ut_config:
-      #   getattr(self.options, opt).value = ut_config[opt]
+      for opt in ut_config:
+        getattr(self.options, opt).value = ut_config[opt]
 
   def connect_chapters(self, first, second, mission):
     mission = locations.mission(mission)
@@ -180,12 +180,8 @@ class MercenariesWorld(World):
     self.multiworld.completion_condition[self.player] = goal
 
   def fill_slot_data(self):
-    return {}
-    # return self.options.as_dict(
-    #   'level_order_bias', 'local_weapon_bias', 'carryover_weapon_bias',
-    #   'spawn_filter', 'included_item_categories') | {
-    #     'selected_wad': [self.wad_logic.name]
-    #   }
+    return self.options.as_dict(
+      'goal', 'vanilla_intel', 'vanilla_intel_target', 'intel_in_pool', 'intel_target')
 
   # Called by UT on connection. In UT mode all configuration will come from
   # slot_data rather than via the YAML.
