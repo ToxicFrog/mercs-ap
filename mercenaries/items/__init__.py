@@ -25,68 +25,7 @@ from typing import NamedTuple
 from BaseClasses import CollectionState, Item, ItemClassification, Location, MultiWorld, Region, Tutorial, LocationProgressType
 
 from ..id import next_id
-
-def suit_to_chapter(suit):
-  return {'clubs': 1, 'diamonds': 2, 'hearts': 3, 'spades': 4}[suit]
-
-
-class GenericIntelItem(NamedTuple):
-  id: int
-  suit: str = None
-
-  def name(self):
-    if self.suit:
-      return f'{self.suit.capitalize()} Intel'
-    else:
-      return 'Progressive Intel'
-
-  def count(self, options):
-    return 0
-
-  def intel_amount(self):
-    return 1
-
-  def classification(self):
-    return ItemClassification.progression
-
-  def groups(self):
-    return {'intel', 'progression'}
-
-
-class CardIntelItem(NamedTuple):
-  id: int
-  rank: int
-  suit: str
-  rank_names = [None, None, 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King']
-
-  def name(self):
-    if self.suit:
-      return f'{self.suit.capitalize()} Intel [{self.rank_names[self.rank]}]'
-    elif rank > 10:
-      return f'Progressive Intel [Face]'
-    else:
-      return f'Progressive Intel [{self.rank_names[self.rank]}]'
-
-  def count(self, options):
-    if not self.suit:
-      return 0
-    if suit_to_chapter(self.suit) <= options.goal:
-      return 1
-    return 0
-
-  # TODO: double check if these are the same numbers for later chapters
-  def intel_amount(self):
-    if self.rank <= 10:
-      return self.rank
-    else:
-      return 30
-
-  def classification(self):
-    return ItemClassification.progression
-
-  def groups(self):
-    return {'intel', 'progression'}
-
+from .intel import CARD_INTEL, GENERIC_INTEL
 
 class MoneyItem(NamedTuple):
   id: int
@@ -105,10 +44,15 @@ class MoneyItem(NamedTuple):
     return {'money', 'filler'}
 
 
-CARD_INTEL = set()
-GENERIC_INTEL = set()
 MONEY = {MoneyItem(next_id(), amount) for amount in [50_000, 100_000, 250_000, 500_000]}
-global ITEMS_BY_NAME
+
+def all_items():
+  return chain(CARD_INTEL, GENERIC_INTEL, MONEY)
+
+ITEMS_BY_NAME = {
+  item.name(): item
+  for item in all_items()
+}
 
 def name_to_id_map():
   return {
@@ -122,21 +66,9 @@ def group_to_names_map():
       groups.setdefault(group, set()).add(item.name())
   return groups
 
-def all_items():
-  return chain(CARD_INTEL, GENERIC_INTEL, MONEY)
-
 def all_progression_items():
   return all_items()
 
 def item_by_name(name):
   return ITEMS_BY_NAME[name]
 
-for suit in ['clubs', 'diamonds', 'hearts', 'spades', None]:
-  GENERIC_INTEL.add(GenericIntelItem(next_id(), suit))
-  for rank in range(2,14):
-    CARD_INTEL.add(CardIntelItem(next_id(), rank, suit))
-
-ITEMS_BY_NAME = {
-  item.name(): item
-  for item in all_items()
-}
