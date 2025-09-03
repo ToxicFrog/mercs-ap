@@ -35,6 +35,9 @@ class CardLocation(NamedTuple):
   def name(self):
     return f'Verify the {self.rank_names[self.rank]} of {self.suit.capitalize()}'
 
+  def should_include(self, options):
+    return self.min_chapter <= options.goal
+
   def groups(self):
     if self.rank == 1:
       return {'cards', 'ace_cards'}

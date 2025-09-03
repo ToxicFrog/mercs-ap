@@ -26,16 +26,22 @@ from BaseClasses import CollectionState, Item, ItemClassification, Location, Mul
 
 from ..id import next_id
 
+def suit_to_chapter(suit):
+  return {'clubs': 1, 'diamonds': 2, 'hearts': 3, 'spades': 4}[suit]
+
+
 class GenericIntelItem(NamedTuple):
   id: int
-  count: int
   suit: str = None
 
   def name(self):
     if self.suit:
-      return f'Intel on the Ace of {self.suit.capitalize()}'
+      return f'{self.suit.capitalize()} Intel'
     else:
-      return 'Progressive Ace Intel'
+      return 'Progressive Intel'
+
+  def count(self, options):
+    return 0
 
   def intel_amount(self):
     return 1
@@ -49,13 +55,24 @@ class GenericIntelItem(NamedTuple):
 
 class CardIntelItem(NamedTuple):
   id: int
-  count: int
   rank: int
   suit: str
   rank_names = [None, None, 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King']
 
   def name(self):
-    return f'Intel from the {self.rank_names[self.rank]} of {self.suit.capitalize()}'
+    if self.suit:
+      return f'{self.suit.capitalize()} Intel [{self.rank_names[self.rank]}]'
+    elif rank > 10:
+      return f'Progressive Intel [Face]'
+    else:
+      return f'Progressive Intel [{self.rank_names[self.rank]}]'
+
+  def count(self, options):
+    if not self.suit:
+      return 0
+    if suit_to_chapter(self.suit) <= options.goal:
+      return 1
+    return 0
 
   # TODO: double check if these are the same numbers for later chapters
   def intel_amount(self):
@@ -93,17 +110,13 @@ def all_items():
 def all_progression_items():
   return all_items()
 
-def all_filler_items():
-  return set()
-
 def item_by_name(name):
   return ITEMS_BY_NAME[name]
 
-GENERIC_INTEL.add(GenericIntelItem(next_id(), 1, None))
-for suit in ['clubs', 'diamonds', 'hearts', 'spades']:
-  GENERIC_INTEL.add(GenericIntelItem(next_id(), 1, suit))
-  for rank in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]:
-    CARD_INTEL.add(CardIntelItem(next_id(), 1, rank, suit))
+for suit in ['clubs', 'diamonds', 'hearts', 'spades', None]:
+  GENERIC_INTEL.add(GenericIntelItem(next_id(), suit))
+  for rank in range(2,14):
+    CARD_INTEL.add(CardIntelItem(next_id(), rank, suit))
 
 ITEMS_BY_NAME = {
   item.name(): item

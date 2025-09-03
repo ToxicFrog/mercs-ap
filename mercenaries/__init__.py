@@ -141,11 +141,16 @@ class MercenariesWorld(World):
 
     self.connect_chapters(chapters[0], chapters[1], 'A1')
     self.connect_chapters(chapters[1], chapters[2], 'A3')
-    self.connect_chapters(chapters[2], chapters[3], 'A6')
-    self.connect_chapters(chapters[3], chapters[4], 'A9')
-    self.connect_chapters(chapters[4], credits_region, 'A11')
+    if self.options.goal > 1:
+      self.connect_chapters(chapters[2], chapters[3], 'A6')
+    if self.options.goal > 2:
+      self.connect_chapters(chapters[3], chapters[4], 'A9')
+    if self.options.goal > 3:
+      self.connect_chapters(chapters[4], credits_region, 'A11')
 
     for location in locations.all_locations():
+      if not location.should_include(self.options):
+        continue
       chapter = chapters[location.min_chapter]
       chapter.locations.append(MercenariesLocation(self, location, chapter))
       self.location_count += 1
@@ -154,7 +159,7 @@ class MercenariesWorld(World):
     slots_left = self.location_count
 
     for item in items.all_progression_items():
-      for _ in range(item.count):
+      for _ in range(item.count(self.options)):
         self.multiworld.itempool.append(self.create_item(item.name()))
         slots_left -= 1
 
@@ -166,8 +171,9 @@ class MercenariesWorld(World):
   def set_rules(self):
     # All region and location access rules were defined in create_regions, so we just need the
     # overall victory condition here.
-    # TODO: Use options to select what the victory condition is.
-    self.multiworld.completion_condition[self.player] = lambda state: state.has('Chapter 4 Complete', self.player)
+    def goal(state):
+      return state.has(f'Chapter {self.options.goal} Complete', self.player)
+    self.multiworld.completion_condition[self.player] = goal
 
   def fill_slot_data(self):
     return {}
