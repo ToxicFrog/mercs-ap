@@ -101,6 +101,10 @@ class MercenariesWorld(World):
     return self.create_item('$50,000')
 
   def generate_early(self) -> None:
+    # Option consistency checks
+    if not self.options.vanilla_intel and not self.options.progressive_intel:
+      assert self.options.intel_in_pool % 4 == 0, 'When not using progressive intel, intel_in_pool must be a multiple of 4'
+    # Universal Tracker yaml-less generation support
     ut_config = getattr(self.multiworld, 're_gen_passthrough', {}).get(self.game, None)
     if ut_config:
       print('Doing Universal Tracker worldgen with settings:', ut_config)
@@ -197,7 +201,10 @@ class MercenariesWorld(World):
       if 'progression' in item.groups() and state.has(item.name(), self.player))
 
   def has_intel_for_chapter(self, state, chapter):
-    target = self.options.intel_in_pool_per_ace and self.options.intel_target_per_ace or 80
+    if self.options.vanilla_intel:
+      target = self.options.vanilla_intel_target
+    else:
+      target = self.options.intel_target
 
     if self.options.progressive_intel:
       suit = None
