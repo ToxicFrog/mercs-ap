@@ -506,3 +506,36 @@ when I actually verify a card.
 
 I could perhaps rig the debug logger to call `gameflow_AttemptAceMissionUnlock()` instead.
 `gameflow_GetIntelTotal` is also written in lua and can thus be replaced.
+
+If we can call Ui_PrintHudMessage() WE CAN DELIVER MESSAGES TO THE PLAYER HOLY SHIT
+
+What do we have to work with?
+0,1 util_PrintDebugMsg -- two constants, 6 opcodes
+0,1 Tooltip_Debug -- five constants, 13 opcodes
+0,1 util_DebugStartMissionChainLoading -- 30+ constants, 167 opcodes
+1 table_Debug -- 13 constants, 84 opcodes
+0,1 ConTooltip_Debug -- 2 constants, 11 opcodes
+1 DebugSkipToMission -- 20+ constants, 114 opcodes
+not all of these are loaded at all times!
+
+So how do we do this?
+We need a global we can use as an idempotency flag
+
+We can steal some constants that aren't used anywhere else:
+DebugMissionChainLoading_QuadrantIndex
+DebugMissionChainLoading_FactionIndex
+DebugMissionChainLoading_SeqNumberIndex
+
+
+; money info
+0054E620 -> 01AB3400 -> 0.833471417427063
+0054E4B0 -> 01A76A00 -> 65000.0 ; nan in the tutorial, but seems stable thereafter
+00558B4C -> 01A76A00 -> 65000.0 ; stable unless you're in a vehicle
+00559634 -> 01A76A00 -> 65000.0 ; as above
+007DA310 -> 01A76A00 -> 65000.0 ; null pointer in the tutorial, fine afterwards?
+00BF2524 -> 000000A2 -> 0.0
+00D9B030 -> 01940500 -> -3.595866417927342e+35
+Need to check these against later chapters to see if $007DA310 is stable.
+If not, $00558B4C are probably our best bet if we can distinguish between
+players and vehicles.
+

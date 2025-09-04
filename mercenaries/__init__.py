@@ -12,7 +12,7 @@ from .options import MercenariesOptions
 logger = logging.getLogger('Mercenaries')
 
 def launch_client(*args) -> None:
-  from .client.MercenariesClient import main
+  from .client import main
   # TODO: use launch() here once it's in main
   LauncherComponents.launch_subprocess(main, name='MercenariesClient', args=args)
 
