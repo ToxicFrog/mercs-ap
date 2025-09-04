@@ -26,6 +26,14 @@ from itertools import chain
 from .cards import CARDS
 from .missions import MissionLocation, MISSIONS
 
+def all_locations():
+  return chain(CARDS.values(), MISSIONS.values())
+
+LOCATIONS_BY_ID = { location.id: location for location in all_locations() }
+
+def location_by_id(id: int):
+  return LOCATIONS_BY_ID[id]
+
 def mission(code: str) -> MissionLocation:
   return MISSIONS[code]
 
@@ -41,5 +49,3 @@ def group_to_names_map():
       groups.setdefault(group, set()).add(location.name())
   return groups
 
-def all_locations():
-  return chain(CARDS.values(), MISSIONS.values())

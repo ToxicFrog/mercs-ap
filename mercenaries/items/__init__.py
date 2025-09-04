@@ -53,10 +53,8 @@ def all_items():
 def all_items_in_groups(groups):
   return (item for item in all_items() if item.groups() >= groups)
 
-ITEMS_BY_NAME = {
-  item.name(): item
-  for item in all_items()
-}
+ITEMS_BY_NAME = { item.name(): item for item in all_items() }
+ITEMS_BY_ID = { item.id: item for item in all_items() }
 
 def name_to_id_map():
   return {
@@ -76,3 +74,5 @@ def all_progression_items():
 def item_by_name(name):
   return ITEMS_BY_NAME[name]
 
+def item_by_id(id):
+  return ITEMS_BY_ID[id]

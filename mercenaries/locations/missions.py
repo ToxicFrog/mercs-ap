@@ -37,6 +37,9 @@ class MissionLocation(NamedTuple):
       return {'missions', 'prc_missions'}
     return {'missions'}
 
+  def is_checked(self, game):
+    return False
+
   def access_rule(self, world):
     prereqs = {
       MISSIONS[prereq].access_rule(world) for prereq in self.prereqs
@@ -85,6 +88,8 @@ PRC_MISSION_NAMES = [
   'An Eye for an Eye', 'Chokepoint', 'Two Degrees of Separation'
 ]
 
+# TODO: we should note which missions give location data for which number cards,
+# and optionally generate hints for their held items.
 # Fields are: id, min_chapter, max_chapter, short_name, name, prerequisite missions if any
 # We don't list cards here, the link from card to mission is sufficient.
 MISSIONS = {

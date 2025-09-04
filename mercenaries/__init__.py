@@ -183,7 +183,8 @@ class MercenariesWorld(World):
 
   def fill_slot_data(self):
     return self.options.as_dict(
-      'goal', 'vanilla_intel', 'vanilla_intel_target', 'intel_in_pool', 'intel_target')
+      'goal', 'vanilla_intel', 'vanilla_intel_target', 'intel_in_pool', 'intel_target', 'progressive_intel',
+      toggles_as_bools=True)
 
   # Called by UT on connection. In UT mode all configuration will come from
   # slot_data rather than via the YAML.

@@ -57,6 +57,9 @@ class CardLocation(NamedTuple):
       and world.current_chapter(state) > self.max_chapter
     )
 
+  def is_checked(self, game):
+    return game.is_card_verified(self.suit, self.rank)
+
   def access_rule(self, world):
     # If this card is located inside a mission, the card is accessible iff the
     # mission is.
