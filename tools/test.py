@@ -8,6 +8,65 @@ pcsx2: Pine = Pine(path = '/run/user/8509/pcsx2.sock')
 
 print(pcsx2.game_info())
 
+cards = [
+  pcsx2.peek32(0x005240e4 + 0x28*i)
+  for i in range(-2, 52+2)
+]
+print(cards)
+sys.exit(0)
+
+for (addr, val, expected) in [
+  ('radard', pcsx2.readmem(0x004a40e8, 8), ''),
+  ('0x005131e0', pcsx2.peek32(0x005131e0), 1),
+  ('0x00501a44', '%x' % pcsx2.peek32(0x00501a44), 'n/a'),
+  ('*0x00501a44', '%x' % pcsx2.peek32(pcsx2.peek32(0x00501a44)), 'n/a'),
+  ('*0x00501a44+0x10', pcsx2.peek32(pcsx2.peek32(0x00501a44) + 0x10), 1),
+  ('0x00558c8c', pcsx2.peek32(0x00558c8c), 999),
+  ('0x00558c8c', pcsx2.peek32(0x00558c8c), 3000),
+  ('0x00558c8c', pcsx2.peek32(0x00558c8c), 50),
+  ('0x005153f0', pcsx2.peek32(0x005153f0), 1),
+]:
+  print(addr, expected, val)
+
+Lptr = pcsx2.peek32(0x0056CBD0)
+L = GCObject(pcsx2, Lptr)
+
+'''
+0x005131e0 1 0 ; 1 if the player has control, 0 in menus/cutscenes/loading
+0x00501a44 n/a 197136c ; pointer to something; briefly a pointer to itself during loading
+*0x00501a44 n/a 501a44 ; pointer back to 0x00501a44
+*0x00501a44+0x10 1 0 ; not sure what this is but RA disables if it and 0x005131e0 are both 1
+0x00558c8c 999 200 ; max ammo counter, RA checks for 999/3000/50 to detect infinite ammo cheats
+0x00558c8c 3000 200
+0x00558c8c 50 200
+0x005153f0 1 0 ; invincibility flag?
+
+When transitioning between maps, we see:
+- player in control flag to 0
+- 0x00501a44 points to itself
+- lua state becomes ill-formed
+--- begin danger zone
+- lua state able to initialize again (but is corrupt)
+- 0x00501a44 points to a new structure
+- L is pointed to a new lua state
+- player in control flag to 1
+--- end danger zone
+
+We have a window here where the lua state looks ok but trying to do anything
+significant with it will crash.
+
+Using the player-in-control flag is probably sufficient?
+'''
+
+sys.exit(0)
+
+for ptr in [0x0054E620, 0x0054E4B0, 0x00558B4C, 0x00559634, 0x0059EB14, 0x0059EB3C, 0x007DA310, 0x00BF2524, 0x00D9B030]:
+  addr = pcsx2.peek32(ptr)
+  money = pcsx2.peekf32(addr + 0xB60)
+  print(f'{ptr:08X} -> {addr:08X} -> {money}')
+
+sys.exit(0)
+
 Lptr = pcsx2.peek32(0x0056CBD0)
 L = GCObject(pcsx2, Lptr)
 

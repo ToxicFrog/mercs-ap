@@ -1,4 +1,4 @@
-from lopcode import LuaOpcode
+from .lopcode import LuaOpcode
 
 _CACHE = {}
 
@@ -126,6 +126,8 @@ class Lua_GCTable(Lua_GCObject):
     def keyEq(self, val):
       if self.k is None:
         return False
+      if isinstance(self.k.val, Lua_CorruptGCObject):
+        return False
       if type(val) == int:
         return self.k.tt == LUA_TNUMBER and self.k.val == val
       if type(val) == bytes:
@@ -172,6 +174,8 @@ class Lua_GCTable(Lua_GCObject):
     return 'table$%08X[a=%d,h=%d]' % (self.addr, self.array_size, self.hash_size)
 
   def getfield(self, key):
+    # TODO: only load keys for this, and then load the value for the specific
+    # entry we find.
     self.lazyLoad()
     if type(key) == int and key < self.array_size:
       return self.array[key]

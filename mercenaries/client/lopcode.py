@@ -51,9 +51,16 @@ OPNAMES = [
   "CLOSE",
   "CLOSURE"
 ]
+OP = {
+  name: index
+  for (index,name) in enumerate(OPNAMES)
+}
 
 class LuaOpcode:
-  def __init__(self, op):
+  def __init__(self, op, **kwargs):
+    if len(kwargs) > 0:
+      self.initByParts(**kwargs)
+      return
     self.op  = op
     self.I   = (op & 0x0000003F) >>  0
     self.A   = (op & 0xFF000000) >> 24
@@ -61,6 +68,17 @@ class LuaOpcode:
     self.C   = (op & 0x00007FC0) >>  6
     self.Bx  = (op & 0x00FFFFC0) >>  6
     self.sBx = self.Bx - 131071
+
+  def initByParts(self, I, A, B=None, C=None, Bx=None, sBx=None):
+    self.I = I
+    self.A = A
+    if B is not None and C is not None:
+      assert Bx is None
+      assert sBx is None
+      self.B = B
+      self.C = C
+      self.Bx = (B << 9) + C
+      self.sBx = self.Bx - 131071
 
   def Kst(self, proto, idx):
     return f'{proto.klist[idx]}'

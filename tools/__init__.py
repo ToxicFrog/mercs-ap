@@ -1,8 +1,8 @@
 import socket
 import struct
 
-from lua import TObject, GCObject, Lua_Nil, Lua_GCFunction, Lua_GCTable
-from pine import Pine
+from .lua import TObject, GCObject, Lua_Nil, Lua_GCFunction, Lua_GCTable
+from .pine import Pine
 
 pcsx2: Pine = Pine(path = '/run/user/8509/pcsx2.sock')
 
