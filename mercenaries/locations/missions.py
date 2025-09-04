@@ -21,7 +21,7 @@ class MissionLocation(NamedTuple):
     return f'{self.faction}{self.rank}'
 
   def name(self):
-    return f'Complete Mission {self.short_name()}: {self.title}'
+    return f'Complete "{self.title}" ({self.short_name()})'
 
   def should_include(self, options):
     return self.min_chapter <= options.goal
