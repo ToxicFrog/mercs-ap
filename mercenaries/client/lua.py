@@ -51,6 +51,7 @@ class Lua_Number(Lua_TObject):
 
   def setval(self, n):
     self.pine.pokef32(self.addr+4, n)
+    self.val = n
 
 class Lua_TObjectGC(Lua_TObject):
   def __init__(self, pine, addr):
@@ -109,21 +110,32 @@ class Lua_GCString(Lua_GCObject):
 class Lua_GCTable(Lua_GCObject):
   class Node:
     def __init__(self, pine, addr):
+      self.pine = pine
       self.addr = addr
-      try:
-        self.k = TObject(pine, addr)
-      except:
-        self.k = None
-        self.v = None
-        return
-      if self.k is None or isinstance(self.k, Lua_Nil):
-        self.v = None
-        self.next = None
-        return
-      self.v = TObject(pine, addr+8)
       self.next = pine.peek32(addr+16)
 
+    def load_key(self):
+      try:
+        self.k = TObject(self.pine, self.addr)
+      except:
+        self.k = None
+
+    def load_val(self):
+      try:
+        self.v = TObject(self.pine, self.addr+8)
+      except:
+        self.v = None
+
+    def load_both(self):
+      self.load_key()
+      if self.k is None or isinstance(self.k, Lua_Nil):
+        self.v = None
+      else:
+        self.load_val()
+      return self
+
     def keyEq(self, val):
+      self.load_key()
       if self.k is None:
         return False
       if isinstance(self.k.val, Lua_CorruptGCObject):
@@ -166,7 +178,7 @@ class Lua_GCTable(Lua_GCObject):
 
     if self.hash is None:
       self.hash = [
-        self.Node(self.pine, self.hash_ptr + i*20)
+        self.Node(self.pine, self.hash_ptr + i*20).load_both()
         for i in range(self.hash_size)
       ]
 
@@ -174,18 +186,21 @@ class Lua_GCTable(Lua_GCObject):
     return 'table$%08X[a=%d,h=%d]' % (self.addr, self.array_size, self.hash_size)
 
   def getfield(self, key):
-    # TODO: only load keys for this, and then load the value for the specific
-    # entry we find.
-    self.lazyLoad()
     if type(key) == int and key < self.array_size:
-      return self.array[key]
+      return TObject(self.pine, self.array_ptr + key*8)
 
     if type(key) == str:
       key = key.encode()
 
-    for node in self.hash:
+    for i in range(self.hash_size):
+      node = self.Node(self.pine, self.hash_ptr + i*20)
+      node.load_key()
+      # print(f'considering node at {node.addr:08X} with key {node.k}')
       if node.keyEq(key):
+        node.load_both()
         return node.v
+      else:
+        pass
 
     return None
 
@@ -331,7 +346,7 @@ class Lua_GCThread(Lua_GCObject):
   def lazyLoad(self):
     self._G.val.lazyLoad()
     for node in self._G.val.hash:
-      if node.k is not None and node.k.tt == LUA_TSTRING and node.v.tt == LUA_TFUNCTION:
+      if node.k is not None and node.k.tt == LUA_TSTRING and node.v is not None and node.v.tt == LUA_TFUNCTION:
         node.v.val.name = node.k
 
   def __str__(self):

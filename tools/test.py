@@ -1,12 +1,66 @@
 import sys
 import time
 
-from pine import Pine
-from lua import GCObject
+from .pine import Pine
+from .lua import GCObject
 
 pcsx2: Pine = Pine(path = '/run/user/8509/pcsx2.sock')
 
 print(pcsx2.game_info())
+
+# LPs: 50202a, 50202c
+# BPs: 502be0, 502be2, 502be4
+# PMs: 502202 ... 50220a?
+# NTs: 502296..29e?
+
+def readCollectableCount(addr):
+  idx = pcsx2.peek16(addr)
+  if idx == 0:
+    return ''
+  ptr = 0xda38c0 + idx
+  buf = pcsx2.readmem(ptr, 8)
+  return buf[:buf.find(0)].decode()
+
+for label,base in [
+  ('LP', 0x50202a),
+  ('BP', 0x502be0),
+  ('PM', 0x502202),
+  ('NT', 0x502294),
+]:
+  print(f'{label} ${base:08X} {[readCollectableCount(base+i*2) for i in range(8)]}')
+sys.exit(0)
+
+
+base = 0x502020
+for base in [0x50202a, 0x50202c, 0x502be0, 0x502be2, 0x502be4]:
+  idx = pcsx2.peek16(base)
+  ptr = 0xda38c0 + idx
+  val = pcsx2.peek8(ptr)
+  ptr2 = pcsx2.peek32(0xda38c0) + idx
+  val2 = pcsx2.peek8(ptr2)
+  print(f'{base:08X} {idx:5}')
+  print(f'   ptr={ptr:08X} -> {[c for c in pcsx2.readmem(ptr-8, 8)]} {[c for c in pcsx2.readmem(ptr, 8)]} {pcsx2.readmem(ptr-8, 16)}')
+  print(f'  ptr2={ptr2:08X} -> {[c for c in pcsx2.readmem(ptr2-8, 8)]} {[c for c in pcsx2.readmem(ptr2, 8)]} {pcsx2.readmem(ptr2-8, 16)}')
+
+
+sys.exit(0)
+
+
+Lptr = pcsx2.peek32(0x0056CBD0)
+L = GCObject(pcsx2, Lptr)
+print(L.getglobal('gameflow_ShouldGameStateApply'))
+sys.exit(0)
+
+ptr = pcsx2.peek32(0x00da38c0)
+print(f'{ptr:08X}  PTR')
+for faction,address in [('M', 0x00502052), ('C', 0x005024d4), ('K', 0x005029be)]:
+  idx = pcsx2.peek16(address)
+  print(f'{faction} {address:08X} {idx:4d} {[c for c in pcsx2.readmem(ptr+idx-8, 16)]}')
+
+for row in range(30):
+  print(f'{ptr+row*16:08X}  [{' '.join([c and str(c) or ' ' for c in pcsx2.readmem(ptr+row*16, 16)])}]')
+
+sys.exit(0)
 
 cards = [
   pcsx2.peek32(0x005240e4 + 0x28*i)
