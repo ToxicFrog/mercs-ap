@@ -66,8 +66,18 @@ class Lua_TObjectGC(Lua_TObject):
   def dump(self, seen, indent=''):
     return self.val.dump(seen, indent)
 
-  def setval(self, n):
-    self.pine.poke32(self.addr+4, n)
+  def settype(self, tt):
+    self.tt = tt
+    self.pine.poke32(self.addr, tt)
+
+  def setval(self, val):
+    if isinstance(val, Lua_GCObject):
+      self.tt = val.tt
+      self.pine.poke32(self.addr, val.tt)
+      self.pine.poke32(self.addr+4, val.addr)
+    elif isinstance(val, int):
+      # Direct set of memory with no type checking
+      self.pine.poke32(self.addr+4, val)
 
 class Lua_CorruptGCObject:
   def __init__(self, addr, tt):
@@ -269,6 +279,17 @@ class Lua_GCFunction(Lua_GCObject):
 
   def getk(self, n):
     return self.proto.klist[n]
+
+  def setk(self, n, tt, val):
+    self.proto.klist[n].settype(tt)
+    self.proto.klist[n].setval(val)
+
+  def patch(self, i, code):
+    assert i+len(code) < self.proto.sizecode
+    for opcode in code:
+      self.proto.code[i] = opcode
+      self.pine.poke32(self.proto.codeptr + 4*i, opcode.op)
+      i += 1
 
   def dump(self, seen, indent=''):
     if self.isC:

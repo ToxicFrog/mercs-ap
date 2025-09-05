@@ -25,7 +25,8 @@ Useful but not yet usable addresses --
 
 from .pine import Pine
 from .shop import MafiaShop
-from .lua import GCObject, Lua_Number
+from .lua import GCObject, Lua_Number, LUA_TNUMBER
+from .lopcode import LuaOpcode
 from .deck import DeckOf52
 
 class IPCError(RuntimeError):
@@ -64,9 +65,6 @@ class MercenariesIPC:
       self.inject(L_ptr)
 
   def inject(self, L_ptr):
-    # We have a problem here.
-    # Sometimes all the consistency checks pass, but the lua_state is still
-    # inconsistent, and getglobal returns a Lua_CorruptGCObject.
     print('Starting code injection.')
     # Initialize Lua.
     # Caller has already done consistency checks so hopefully we don't crash.
@@ -82,8 +80,7 @@ class MercenariesIPC:
     # Replace the function body with an immediate return.
     # code[0] is already LOADK r1, 0 -- i.e. exactly what we want -- so we just
     # replace code[1] with a return.
-    codeptr = gameflow_GetIntelTotal.proto.codeptr
-    self.pine.poke32(codeptr + 4, 0x0101001B) # RETURN [r1...r1]
+    gameflow_GetIntelTotal.patch(1, [LuaOpcode('RETURN', A=1, B=3)])
 
     # Redirect frequently-called debug output functions to instead re-evaluate
     # the intel situation (and use our modified GetIntelTotal in the process).

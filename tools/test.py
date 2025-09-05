@@ -28,6 +28,9 @@ for label,base in [
   ('NT', 0x502294),
 ]:
   print(f'{label} ${base:08X} {[readCollectableCount(base+i*2) for i in range(8)]}')
+  print('indexes', [pcsx2.peek16(base+i*2) for i in range(8)])
+  print('pointers', ['%08X' % pcsx2.peek32(0xda38c0 + pcsx2.peek16(base+i*2)) for i in range(8)])
+
 sys.exit(0)
 
 
