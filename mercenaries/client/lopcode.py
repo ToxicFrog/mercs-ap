@@ -132,28 +132,10 @@ class LuaOpcode:
       case 18: return f'      NOT r{A} := not r{B}'
       case 19: return f'   CONCAT r{A} := r{B} ... r{C}'
       case 20: return f'      JMP {sBx:+d} ; {addr+sBx+1}'
-      case 21:
-        if A == 0:
-          return f'      BEQ {self.RK(proto, B)} == {self.RK(proto, C)}'
-        else:
-          return f'      BNE {self.RK(proto, B)} != {self.RK(proto, C)}'
-      case 22:
-        if A == 0:
-          return f'      BLT {self.RK(proto, B)} < {self.RK(proto, C)}'
-        else:
-          return f'      BGE {self.RK(proto, B)} >= {self.RK(proto, C)}'
-      case 23:
-        if A == 0:
-          return f'      BLE {self.RK(proto, B)} <= {self.RK(proto, C)}'
-        else:
-          return f'      BGT {self.RK(proto, B)} > {self.RK(proto, C)}'
-      # OP_TEST,/*      A B C   if (R(B) <=> C) then R(A) := R(B) else pc++     */
-      # ????
-      case 24:
-        if C == 0:
-          return f'     TEST not r{A}: r{A} := r{B} ; or skip'
-        else:
-          return f'     TEST r{A}: r{A} := r{B} ; or skip'
+      case 21: return f'       EQ {self.RK(proto, B)} {'==' if A else '!='} {self.RK(proto, C)}'
+      case 22: return f'       LT {self.RK(proto, B)} {'<' if A else '>='} {self.RK(proto, C)}'
+      case 23: return f'       LE {self.RK(proto, B)} {'<=' if A else '>'} {self.RK(proto, C)}'
+      case 24: return f'     TEST {'' if C else 'not '}r{B} : r{A} := r{B}'
       case 25: return f'     CALL r{A} ({B-1} args) => {C-1} results'
       case 26: return f' TAILCALL r{A} ({B-1} args)'
       case 27: return f'   RETURN r{A} ... r{A+B-2}'
@@ -166,32 +148,3 @@ class LuaOpcode:
       case 34: return f'  CLOSURE r{A} := closure({Bx}, r{A}...)'
 
       case  _: return f'<<invalid opcode: {self.op:08X}>>'
-
-"""
-** R(x) - register
-** Kst(x) - constant (in constant table)
-** RK(x) == if x < MAXSTACK then R(x) else Kst(x-MAXSTACK)
-
-typedef enum {
-/*----------------------------------------------------------------------
-name            args    description
-------------------------------------------------------------------------*/
-
-OP_CALL,/*      A B C   R(A), ... ,R(A+C-2) := R(A)(R(A+1), ... ,R(A+B-1)) */
-OP_TAILCALL,/*  A B C   return R(A)(R(A+1), ... ,R(A+B-1))              */
-OP_RETURN,/*    A B     return R(A), ... ,R(A+B-2)      (see note)      */
-
-OP_FORLOOP,/*   A sBx   R(A)+=R(A+2); if R(A) <?= R(A+1) then PC+= sBx  */
-
-OP_TFORLOOP,/*  A C     R(A+2), ... ,R(A+2+C) := R(A)(R(A+1), R(A+2));
-                        if R(A+2) ~= nil then pc++                      */
-OP_TFORPREP,/*  A sBx   if type(R(A)) == table then R(A+1):=R(A), R(A):=next;
-                        PC += sBx                                       */
-
-OP_SETLIST,/*   A Bx    R(A)[Bx-Bx%FPF+i] := R(A+i), 1 <= i <= Bx%FPF+1 */
-OP_SETLISTO,/*  A Bx                                                    */
-
-OP_CLOSE,/*     A       close all variables in the stack up to (>=) R(A)*/
-OP_CLOSURE/*    A Bx    R(A) := closure(KPROTO[Bx], R(A), ... ,R(A+n))  */
-} OpCode;
-"""
