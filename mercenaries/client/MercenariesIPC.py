@@ -80,7 +80,7 @@ class MercenariesIPC:
     # Replace the function body with an immediate return.
     # code[0] is already LOADK r1, 0 -- i.e. exactly what we want -- so we just
     # replace code[1] with a return.
-    gameflow_GetIntelTotal.patch(1, [LuaOpcode('RETURN', A=1, B=3)])
+    gameflow_GetIntelTotal.patch(1, [LuaOpcode('RETURN', A=1, B=2)])
 
     # Redirect frequently-called debug output functions to instead re-evaluate
     # the intel situation (and use our modified GetIntelTotal in the process).
