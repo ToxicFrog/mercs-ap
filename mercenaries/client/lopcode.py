@@ -59,7 +59,7 @@ OP = {
 class LuaOpcode:
   def __init__(self, op, **kwargs):
     if len(kwargs) > 0:
-      self.initByParts(**kwargs)
+      self.initByParts(I=op, **kwargs)
       return
     self.op  = op
     self.I   = (op & 0x0000003F) >>  0
@@ -69,16 +69,35 @@ class LuaOpcode:
     self.Bx  = (op & 0x00FFFFC0) >>  6
     self.sBx = self.Bx - 131071
 
-  def initByParts(self, I, A, B=None, C=None, Bx=None, sBx=None):
-    self.I = I
-    self.A = A
-    if B is not None and C is not None:
-      assert Bx is None
-      assert sBx is None
-      self.B = B
-      self.C = C
-      self.Bx = (B << 9) + C
+  def __repr__(self):
+    return f'LuaOpcode({self.op:08x}, {OPNAMES[self.I] if self.I in OPNAMES else self.I}, A={self.A}, B={self.B}, C={self.B}, Bx={self.Bx}, sBx={self.sBx})'
+
+  def initByParts(self, I, A=None, B=None, C=None, Bx=None, sBx=None):
+    self.I = OP[I] if I in OP else I
+    self.A = A or 0
+    if Bx is not None:
+      assert B is None and C is None and sBx is None
+      self.Bx = Bx
+      self.sBx = Bx - 131071
+      self.B = (self.Bx >> 9) * 0x1FF
+      self.C = self.Bx & 0x1FF
+    elif sBx is not None:
+      assert B is None and C is None and Bx is None
+      self.Bx = sBx + 131071
+      self.sBx = sBx
+      self.B = (self.Bx >> 9) * 0x1FF
+      self.C = self.Bx & 0x1FF
+    else:
+      self.B = B or 0
+      self.C = C or 0
+      self.Bx = (self.B << 9) + self.C
       self.sBx = self.Bx - 131071
+
+    self.op = (self.A << 24) | (self.B << 15) | (self.C << 6) | self.I
+
+    tmp = LuaOpcode(self.op)
+    assert tmp.I == self.I and tmp.A == self.A and tmp.Bx == self.Bx, f'{self} != {tmp}'
+
 
   def Kst(self, proto, idx):
     return f'k{idx} ({proto.klist[idx]})'
