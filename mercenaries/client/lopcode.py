@@ -94,9 +94,10 @@ class LuaOpcode:
       self.sBx = self.Bx - 131071
 
     self.op = (self.A << 24) | (self.B << 15) | (self.C << 6) | self.I
+    # print(f'InitByParts {self.op:08X} A={self.A} B={self.B} C={self.C} Bx={self.Bx} sBx={self.sBx} I={self.I}')
 
     tmp = LuaOpcode(self.op)
-    assert tmp.I == self.I and tmp.A == self.A and tmp.Bx == self.Bx, f'{self} != {tmp}'
+    assert tmp.I == self.I and tmp.A == self.A and tmp.B == self.B and tmp.Bx == self.Bx, f'{self} != {tmp}'
 
 
   def Kst(self, proto, idx):
@@ -138,7 +139,13 @@ class LuaOpcode:
       case 24: return f'     TEST {'' if C else 'not '}r{B} : r{A} := r{B}'
       case 25: return f'     CALL r{A} ({B-1} args) => {C-1} results'
       case 26: return f' TAILCALL r{A} ({B-1} args)'
-      case 27: return f'   RETURN r{A} ... r{A+B-2}'
+      case 27:
+        if B == 0:
+          return f'   RETURN r{A} ... top'
+        elif B == 1:
+          return f'   RETURN'
+        else:
+          return f'   RETURN r{A} ... r{A+B-2}'
       case 28: return f'  FORLOOP r{A} := r{A+2}; if r{A} <= r{A+1} JMP {sBx:+d}'
       case 29: return f' TFORLOOP WIP'
       case 30: return f' TFORPREP WIP'
