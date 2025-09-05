@@ -81,6 +81,8 @@ CARDS = {
     [CardLocation(next_id(), 1, 1, rank, 'clubs') for rank in range(3,11)],
     # Face cards are in Mafia, PRC, SK, and AN missions.
     [
+      # TODO: face cards might become missable once we complete the ace, not just
+      # number cards.
       CardLocation(next_id(), 1, 4, 11, 'clubs', 'M3'),
       CardLocation(next_id(), 1, 4, 12, 'clubs', 'C3'),
       CardLocation(next_id(), 1, 4, 13, 'clubs', 'K3'),

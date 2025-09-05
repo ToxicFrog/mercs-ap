@@ -100,6 +100,11 @@ MISSIONS = {
     # ace missions, which require special handling
     [
       MissionLocation(next_id(), 0, 4, 'A', 1, AN_MISSION_NAMES[0]),
+      # TODO: is this missable if you jump straight to the ace?
+      # Things to test:
+      # - have A2 open when you do the ace mission
+      # - have another faction's 2 mission open
+      # - have another faction's 3 mission open
       MissionLocation(next_id(), 1, 4, 'A', 2, AN_MISSION_NAMES[1], {'A1', 'K1', 'M1', 'C1'}),
       MissionLocation(next_id(), 1, 4, 'A', 3, AN_MISSION_NAMES[2], {'A2'}, True),
       MissionLocation(next_id(), 2, 4, 'A', 4, AN_MISSION_NAMES[3], {'A3'}),

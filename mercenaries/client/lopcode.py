@@ -81,7 +81,7 @@ class LuaOpcode:
       self.sBx = self.Bx - 131071
 
   def Kst(self, proto, idx):
-    return f'{proto.klist[idx]}'
+    return f'k{idx} ({proto.klist[idx]})'
 
   def RK(self, proto, idx):
     if idx < 250: # MAXSTACK
@@ -96,7 +96,7 @@ class LuaOpcode:
       case  1: return f'    LOADK r{A} := {self.Kst(proto, Bx)}'
       case  2: return f' LOADBOOL r{A} := {B != 0}{C != 0 and f' ; br {addr+2}' or ''}'
       case  3: return f'  LOADNIL r{A} ... r{B}'
-      case  4: return f' GETUPVAL r{A} := UV[{B}]'
+      case  4: return f' GETUPVAL r{A} := u{B}'
       case  5: return f'GETGLOBAL r{A} := _G[{self.Kst(proto, Bx)}]'
       case  6: return f' GETTABLE r{A} := r{B}[{self.RK(proto, C)}]'
       case  7: return f'SETGLOBAL r{A} ->> _G[{self.Kst(proto, Bx)}]'
