@@ -8,9 +8,7 @@
       and have not successfully delivered to the player
 - Checks:
   - Number of bounties
-    - Option to use vanilla thresholds, or set manually
     - Option to set point beyond which there will be no progression items
-    - Use combat logic so that all bounties aren't in logic from the start, avoid KH problem
   - Number of unique vehicles destroyed, and/or specific vehicle types
     - Need to map out which types belong to which array slots
     - Need to also evaluate which vehicles are available when so we can set
@@ -18,6 +16,8 @@
   - See if either the vehicle stats approach or the bounty stats approach works for
     challenge completions, vehicles driven, weapons found
 - Items:
+  - Generic discount
+    - Applies to your most expensive item
   - Faction reputation bonuses
     - Probably needs more code injection
   - Faction floor increases

@@ -8,18 +8,27 @@ pcsx2: Pine = Pine(path = '/run/user/8509/pcsx2.sock')
 
 print(pcsx2.game_info())
 
-Lptr = pcsx2.peek32(0x0056CBD0)
-L = GCObject(pcsx2, Lptr)
-
-print(TObject(pcsx2, 0x01CA32F8))
-print(TObject(pcsx2, 0x01CA32F8+8))
-print(L.getglobal('mission_accepted'))
-sys.exit(0)
+# Lptr = pcsx2.peek32(0x0056CBD0)
+# L = GCObject(pcsx2, Lptr)
 
 # LPs: 50202a, 50202c
 # BPs: 502be0, 502be2, 502be4
 # PMs: 502202 ... 50220a?
 # NTs: 502296..29e?
+
+from .stats import PDAStats
+
+stats = PDAStats(pcsx2)
+print(stats.vehicles_destroyed())
+print(stats.bounties_found())
+
+sys.exit(0)
+
+print([
+  pcsx2.peekf32(addr) or ''
+  for addr in range(0x005a7264, 0x005a7680+1, 4)
+])
+
 
 def readCollectableCount(addr):
   idx = pcsx2.peek16(addr)
@@ -36,8 +45,8 @@ for label,base in [
   ('NT', 0x502294),
 ]:
   print(f'{label} ${base:08X} {[readCollectableCount(base+i*2) for i in range(8)]}')
-  print('indexes', [pcsx2.peek16(base+i*2) for i in range(8)])
-  print('pointers', ['%08X' % pcsx2.peek32(0xda38c0 + pcsx2.peek16(base+i*2)) for i in range(8)])
+  # print('indexes', [pcsx2.peek16(base+i*2) for i in range(8)])
+  # print('pointers', ['%08X' % pcsx2.peek32(0xda38c0 + pcsx2.peek16(base+i*2)) for i in range(8)])
 
 sys.exit(0)
 

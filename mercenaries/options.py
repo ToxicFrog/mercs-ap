@@ -122,6 +122,32 @@ class ShopDiscountPercent(Range):
   range_end = 100
   default = 50
 
+class BountyChecks(OptionDict):
+  '''
+  As in the vanilla game, you get rewarded for reaching bounty totals, not
+  specific individual bounties. This setting controls how many checks are available
+  in each bounty category.
+
+  The default of 'vanilla' uses the same breakpoints as the vanilla game, which
+  is every 10 + some extras depending on the bounty type. A setting of 'all'
+  makes every bounty a distinct check. Using a number will cause that bounty
+  type to have that many checks, evenly distributed.
+
+  The available check counts are:
+         blueprint: vanilla 14, all 110
+          treasure: vanilla 14, all 110
+    listening post: vanilla  6, all  56
+          monument: vanilla  2, all  21
+  '''
+  display_name = 'Bounty Configuration'
+  valid_keys = {'blueprint', 'treasure', 'listening post', 'monument'}
+  default = {
+    'blueprint': 'vanilla',
+    'treasure': 'vanilla',
+    'listening post': 'vanilla',
+    'monument': 'vanilla',
+  }
+
 @dataclass
 class MercenariesOptions(PerGameCommonOptions):
   goal: Goal
@@ -132,3 +158,4 @@ class MercenariesOptions(PerGameCommonOptions):
   intel_target: IntelTarget
   shop_unlock_count: ShopUnlockCount
   shop_discount_percent: ShopDiscountPercent
+  bounty_checks: BountyChecks

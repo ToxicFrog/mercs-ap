@@ -30,6 +30,7 @@ from .shop import MafiaShop
 from .lua import GCObject, Lua_TObject, LUA_TNUMBER, LUA_TSTRING
 from .lopcode import LuaOpcode
 from .deck import DeckOf52
+from .stats import PDAStats
 
 class IPCError(RuntimeError):
   pass
@@ -40,11 +41,13 @@ class MercenariesIPC:
   L_ptr: int = -1
   intel_total: Lua_TObject
   deck: DeckOf52
+  stats: PDAStats
 
   def __init__(self, pine_path: str) -> None:
     self.pine = Pine(pine_path)
     self.shop = MafiaShop(self.pine)
     self.deck = DeckOf52(self.pine)
+    self.stats = PDAStats(self.pine)
 
   def validate(self):
     # We need to both probe the game to see if it's in a consistent state, and
@@ -192,6 +195,9 @@ class MercenariesIPC:
     if not missions:
       return False
     return mission < missions.getfield(faction).val()
+
+  def is_bounty_collected(self, type: str, count: int) -> bool:
+    return self.stats.bounties_found()[type] >= count
 
   #### For sending things to the game ####
   def adjust_money(self, delta: int):

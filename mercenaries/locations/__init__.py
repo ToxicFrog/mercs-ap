@@ -39,9 +39,10 @@ from itertools import chain
 
 from .cards import CARDS
 from .missions import MissionLocation, MISSIONS
+from .bounties import BOUNTIES
 
 def all_locations():
-  return chain(CARDS.values(), MISSIONS.values())
+  return chain(CARDS.values(), MISSIONS.values(), BOUNTIES.values())
 
 LOCATIONS_BY_ID = { location.id: location for location in all_locations() }
 
