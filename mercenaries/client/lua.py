@@ -12,6 +12,8 @@ LUA_TFUNCTION = 6
 LUA_TUSERDATA = 7
 LUA_TTHREAD = 8
 
+# TODO: rewrite all of this to use MemVars, have a more consistent API across
+# types, allow mutating between types in place, etc
 class Lua_TObject:
   def __init__(self, pine, addr):
     _CACHE[addr] = self
@@ -195,24 +197,26 @@ class Lua_GCTable(Lua_GCObject):
   def __str__(self):
     return 'table$%08X[a=%d,h=%d]' % (self.addr, self.array_size, self.hash_size)
 
+  def getkey(self, key):
+    node = self.getnode(key)
+    return node.k if node else None
+
+  def getnode(self, key):
+    if type(key) == str:
+      key = key.encode()
+    for i in range(self.hash_size):
+      node = self.Node(self.pine, self.hash_ptr + i*20)
+      node.load_key()
+      if node.keyEq(key):
+        return node.load_both()
+    return None
+
   def getfield(self, key):
     if type(key) == int and key < self.array_size:
       return TObject(self.pine, self.array_ptr + key*8)
 
-    if type(key) == str:
-      key = key.encode()
-
-    for i in range(self.hash_size):
-      node = self.Node(self.pine, self.hash_ptr + i*20)
-      node.load_key()
-      # print(f'considering node at {node.addr:08X} with key {node.k}')
-      if node.keyEq(key):
-        node.load_both()
-        return node.v
-      else:
-        pass
-
-    return None
+    node = self.getnode(key)
+    return node.v if node else None
 
   def hasMetatable(self, seen):
     return (
@@ -281,12 +285,14 @@ class Lua_GCFunction(Lua_GCObject):
     return self.proto.klist[n]
 
   def setk(self, n, tt, val):
-    self.proto.klist[n].settype(tt)
+    self.proto.klist[n].tt = tt
+    self.pine.poke32(self.proto.klist[n].addr, tt)
     self.proto.klist[n].setval(val)
 
   def patch(self, i, code):
     assert i+len(code) < self.proto.sizecode
     for opcode in code:
+      # print(f'[patch {self.name}] @ {self.proto.codeptr:08X}[{i}]: {opcode.pprint(self.proto, i)}')
       self.proto.code[i] = opcode
       self.pine.poke32(self.proto.codeptr + 4*i, opcode.op)
       i += 1

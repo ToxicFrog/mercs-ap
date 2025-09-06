@@ -85,7 +85,7 @@ class LuaOpcode:
       assert B is None and C is None and Bx is None
       self.Bx = sBx + 131071
       self.sBx = sBx
-      self.B = (self.Bx >> 9) * 0x1FF
+      self.B = (self.Bx >> 9) & 0x1FF
       self.C = self.Bx & 0x1FF
     else:
       self.B = B or 0
@@ -133,9 +133,14 @@ class LuaOpcode:
       case 18: return f'      NOT r{A} := not r{B}'
       case 19: return f'   CONCAT r{A} := r{B} ... r{C}'
       case 20: return f'      JMP {sBx:+d} ; {addr+sBx+1}'
+      # Tests always precede jumps, and effectively mean "if the test passes,
+      # execute the jump, otherwise skip to the instruction after it". A=1
+      # inverts the test.
       case 21: return f'       EQ {self.RK(proto, B)} {'==' if A else '!='} {self.RK(proto, C)}'
       case 22: return f'       LT {self.RK(proto, B)} {'<' if A else '>='} {self.RK(proto, C)}'
       case 23: return f'       LE {self.RK(proto, B)} {'<=' if A else '>'} {self.RK(proto, C)}'
+      # Boolean test. C=1 tests for trueness, C=0 for falseness.
+      # Tests rB, and on success does a MOVE rA,rB before executing the jump.
       case 24: return f'     TEST {'' if C else 'not '}r{B} : r{A} := r{B}'
       case 25: return f'     CALL r{A} ({B-1} args) => {C-1} results'
       case 26: return f' TAILCALL r{A} ({B-1} args)'

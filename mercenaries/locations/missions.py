@@ -28,17 +28,19 @@ class MissionLocation(NamedTuple):
 
   def groups(self):
     if self.faction == 'A':
-      return {'missions', 'an_missions'}
+      return {'missions', 'allies_missions'}
     elif self.faction == 'K':
       return {'missions', 'sk_missions'}
     elif self.faction == 'M':
       return {'missions', 'mafia_missions'}
     elif self.faction == 'C':
-      return {'missions', 'prc_missions'}
+      return {'missions', 'china_missions'}
     return {'missions'}
 
   def is_checked(self, game):
-    return False
+    return game.is_mission_complete(
+      {'A': 'allies', 'K': 'sk', 'M': 'mafia', 'C': 'china'}[self.faction],
+      self.rank)
 
   def access_rule(self, world):
     prereqs = {

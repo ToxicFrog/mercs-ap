@@ -25,7 +25,7 @@ Useful but not yet usable addresses --
 
 from .pine import Pine
 from .shop import MafiaShop
-from .lua import GCObject, Lua_Number, LUA_TNUMBER
+from .lua import GCObject, Lua_Number, LUA_TNUMBER, LUA_TSTRING
 from .lopcode import LuaOpcode
 from .deck import DeckOf52
 
@@ -62,7 +62,13 @@ class MercenariesIPC:
 
     L_ptr = self.pine.peek32(0x0056CBD0)
     if self.L_ptr != L_ptr:
+      self.clear_handles()
       self.inject(L_ptr)
+
+  def clear_handles(self):
+    self.L_ptr = None
+    self.intel_total = None
+    self.missions = None
 
   def inject(self, L_ptr):
     print('Starting code injection.')
@@ -82,11 +88,44 @@ class MercenariesIPC:
     # replace code[1] with a return.
     gameflow_GetIntelTotal.patch(1, [LuaOpcode('RETURN', A=1, B=2)])
 
-    # Redirect frequently-called debug output functions to instead re-evaluate
-    # the intel situation (and use our modified GetIntelTotal in the process).
-    gameflow_AttemptAceMissionUnlock = L.getglobal('gameflow_AttemptAceMissionUnlock').val.addr
-    L.getglobal('util_PrintDebugMsg').setval(gameflow_AttemptAceMissionUnlock)
-    L.getglobal('Debug_Printf').setval(gameflow_AttemptAceMissionUnlock)
+    # Modify gameflow_ShouldGameStateApply to exfiltrate information about
+    # mission completion state (and exit early if called without arguments).
+    ShouldGameStateApply = L.getglobal('gameflow_ShouldGameStateApply').val
+    ShouldGameStateApply.patch(24, [
+      LuaOpcode('SETGLOBAL', A=5, Bx=1), # set _G.mission_accepted to r5, which is the info table
+      LuaOpcode('TEST', A=0, B=0, C=0), # test if r0 is nil, and if so
+      LuaOpcode('JMP', sBx=50), # jump to the end of the function
+    ])
+
+    # Hook the debug output function to call stuff we designate instead.
+    # First, make it a no-op in case it gets called while we're wiggling it.
+    PrintDebugMsg = L.getglobal('util_PrintDebugMsg').val
+    PrintDebugMsg.patch(0, [LuaOpcode('RETURN', A=0, B=1)])
+
+    # Replace its constant table with references to the functions we want to call.
+    PrintDebugMsg.setk(0, LUA_TSTRING, L._G.val.getkey('gameflow_ShouldGameStateApply').val)
+    PrintDebugMsg.setk(1, LUA_TSTRING, L._G.val.getkey('gameflow_AttemptAceMissionUnlock').val)
+
+    # Replace the function body with calls to those functions.
+    PrintDebugMsg.patch(1, [
+      LuaOpcode('GETGLOBAL', A=0, Bx=0),
+      LuaOpcode('CALL', A=0, B=1, C=1),
+      LuaOpcode('GETGLOBAL', A=0, Bx=1),
+      LuaOpcode('CALL', A=0, B=1, C=1),
+      LuaOpcode('RETURN', A=0, B=1),
+    ])
+
+    # Nop out the early return.
+    PrintDebugMsg.patch(0, [LuaOpcode('MOVE', A=0, B=0)])
+
+    # Now redirect Debug_Printf to alias util_PrintDebugMsg.
+    L.getglobal('Debug_Printf').setval(PrintDebugMsg.addr)
+
+    # Could do a similar hook of LoadNoMissionState
+    # Starting at instruction 28, the chapter and current AN, PRC, Mafia, and SK missions
+    # are in registers r0, r1, r2, r3, and r4
+    # and 28 through 57 are all debug output in five batches of six instructions each
+
     print('Code injection complete.')
 
 
@@ -130,8 +169,21 @@ class MercenariesIPC:
   def is_card_verified(self, suit, rank):
     return self.deck.is_verified(suit, rank)
 
-  def is_mission_complete(self, mission):
-    return False
+  def refresh_mission_list(self):
+    if not self.missions:
+      L = GCObject(self.pine, self.L_ptr)
+      self.missions = L._G.val.getnode('mission_accepted')
+    if self.missions:
+      return self.missions.v.val
+    else:
+      return None
+
+  def is_mission_complete(self, faction, mission):
+    self.validate()
+    missions = self.refresh_mission_list()
+    if not missions:
+      return False
+    return mission < missions.getfield(faction).val
 
   #### For sending things to the game ####
   def adjust_money(self, delta):

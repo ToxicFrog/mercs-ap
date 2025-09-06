@@ -91,6 +91,10 @@ class MercenariesConnector:
     # This is not idempotent, so we send the missing items once each and
     # record them as send them.
     # If the send fails, adjust_money will throw and we don't do the append.
+    # TODO: this ends up sending the money every time we connect, which is a
+    # problem. We need to record in the game, possibly in the unused last opcode
+    # of util_PrintDebugMsg, how many items we've sent, and only send items that
+    # are newer than that.
     for item in self.all_money_items[len(self.sent_money_items):]:
       print(f'Sending money: {item.name()}')
       self.game.adjust_money(item.amount)

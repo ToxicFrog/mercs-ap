@@ -2,11 +2,19 @@ import sys
 import time
 
 from .pine import Pine
-from .lua import GCObject
+from .lua import GCObject, TObject
 
 pcsx2: Pine = Pine(path = '/run/user/8509/pcsx2.sock')
 
 print(pcsx2.game_info())
+
+Lptr = pcsx2.peek32(0x0056CBD0)
+L = GCObject(pcsx2, Lptr)
+
+print(TObject(pcsx2, 0x01CA32F8))
+print(TObject(pcsx2, 0x01CA32F8+8))
+print(L.getglobal('mission_accepted'))
+sys.exit(0)
 
 # LPs: 50202a, 50202c
 # BPs: 502be0, 502be2, 502be4
