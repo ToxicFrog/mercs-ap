@@ -15,7 +15,7 @@ class ShopItem(NamedTuple):
     return f'{self.type.capitalize()}: {self.title}'
 
   def count(self, options):
-    return options.shop_unlock_count
+    return int(options.shop_unlock_count)
 
   def groups(self):
     return {'progression', 'shop', self.type}

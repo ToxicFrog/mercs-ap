@@ -166,9 +166,10 @@ class MercenariesWorld(World):
   def create_items(self) -> None:
     slots_left = self.location_count
 
+    print('Including progression items:')
     for item in items.all_progression_items():
       if item.count(self.options) > 0:
-        print(item.count(self.options), item.name())
+        print(f'{item.count(self.options):4d} {item.name()}')
       for _ in range(item.count(self.options)):
         self.multiworld.itempool.append(self.create_item(item.name()))
         slots_left -= 1
