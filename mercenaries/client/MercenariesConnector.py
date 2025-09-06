@@ -32,13 +32,9 @@ class MercenariesConnector:
   ipc: MercenariesIPC
   options: Dict[str, Any]
 
-  sent_shop_items: List[Any] = []
-  sent_money_items: List[Any] = []
-  sent_intel_items: List[Any] = []
-
-  all_shop_items: List[Any] = []
-  all_money_items: List[Any] = []
-  all_intel_items: List[Any] = []
+  queued_shop_items: List[Any] = []
+  queued_intel_items: List[Any] = []
+  queued_money_items: List[Any] = []
 
   def __init__(self, client, game, options):
     self.client = client
@@ -61,26 +57,29 @@ class MercenariesConnector:
     return found
 
   #### Writers ####
-  def send_items(self, items: List[int]):
+  def send_items(self, items: List[int], last_sent: int):
     '''
     Send the specified items to the game. This is the complete list of items the
     client knows we have received, which may include stuff we've already sent.
     '''
     items = [item_by_id(id) for id in items]
-    self.all_shop_items = [item for item in items if 'shop' in item.groups()]
-    self.all_money_items = [item for item in items if 'money' in item.groups()]
-    self.all_intel_items = [item for item in items if 'intel' in item.groups()]
+    self.queued_shop_items = [item for item in items if 'shop' in item.groups()]
+    self.queued_intel_items = [item for item in items if 'intel' in item.groups()]
+    # We only take items after last_sent because the ones before that we have recorded
+    # on the server as having been sent already, and unlike shop and intel items,
+    # money is not idempotent.
+    self.queued_money_items = [item for item in items[last_sent:] if 'money' in item.groups()]
     self.converge()
 
   # Converge the game state with the rando state by sending any missing items.
   # Items are always sent from the host in the order they were discovered, so
-  # any items at the end of all_foo_items that are not in sent_foo_items are
+  # any items at the end of queued_foo_items that are not in sent_foo_items are
   # the missing ones.
   def converge(self):
     try:
       self.converge_shop_items()
-      self.converge_money_items()
       self.converge_intel_items()
+      self.converge_money_items()
     except IPCError as e:
       logger.info(f'Error sending items to game, will retry later: {e}')
 
@@ -90,10 +89,10 @@ class MercenariesConnector:
     # This is idempotent, so we just send the whole set of unlocks each time.
     # We do this even if the set of unlocks hasn't changed, because the player
     # may have unlocked new items in-game and we need to override that!
-    print(f'Unlocking items: {[item.name() for item in self.all_shop_items]}')
+    print(f'Unlocking items: {[item.name() for item in self.queued_shop_items]}')
     unlock_list = []
     by_tag = {}
-    for item in self.all_shop_items:
+    for item in self.queued_shop_items:
       if item.tag in by_tag:
         by_tag[item.tag][1] += 1
       else:
@@ -102,7 +101,6 @@ class MercenariesConnector:
         by_tag[item.tag] = unlock
 
     self.game.set_unlocked_shop_items(unlock_list, 1.0 - self.options['shop_discount_percent']/100)
-    self.sent_shop_items = self.all_shop_items
 
   def converge_money_items(self):
     # This is not idempotent, so we send the missing items once each and
@@ -111,10 +109,9 @@ class MercenariesConnector:
     # TODO: this ends up sending the money every time we connect, which is a
     # problem. We need to use the AP Set/Get API to record which ones have been
     # successfully sent.
-    for item in self.all_money_items[len(self.sent_money_items):]:
+    for item in self.queued_money_items:
       print(f'Sending money: {item.name()}')
       self.game.adjust_money(item.amount)
-      self.sent_money_items.append(item)
 
   def converge_intel_items(self):
     # This is fully idempotent and is a single call to setk() in practice so we
@@ -122,7 +119,7 @@ class MercenariesConnector:
     chapter = self.game.current_chapter()
     suit = ['clubs', 'diamonds', 'hearts', 'spades'][chapter-1]
     total_intel = sum(
-      item.intel_amount() for item in self.all_intel_items
+      item.intel_amount() for item in self.queued_intel_items
       if item.suit is None or item.suit == suit)
 
     # If progressive intel is on, excess intel "rolls over" from earlier
@@ -137,4 +134,3 @@ class MercenariesConnector:
 
     print(f'converge_intel: chapter={chapter} suit={suit} total={total_intel} target={target_intel}')
     self.game.set_intel(total_intel, target_intel)
-    self.sent_intel_items = self.all_intel_items

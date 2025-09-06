@@ -23,6 +23,7 @@ class MercenariesContext(SuperContext):
   items_handling = 0b111  # fully remote
   want_slot_data = True
   tags = {'AP'}
+  ap_state = {}
 
   def __init__(self, server_address: str, slot_name: str, password: str, pine_path: str):
     super().__init__(server_address, password)
@@ -35,6 +36,7 @@ class MercenariesContext(SuperContext):
     self.debug('Resetting server state.')
     super().reset_server_state()
     self.connector = None
+    self.ap_state = {}
 
   def make_gui(self):
     ui = super().make_gui()
@@ -70,13 +72,17 @@ class MercenariesContext(SuperContext):
   #   await self.send_connect()
 
   def on_package(self, cmd: str, args: dict):
-    # if _MERCS_DEBUG:
-    #   self.debug('on_package: %s %s', cmd, args)
-    if cmd == 'Connected':
-      self.slot_data = args.get("slot_data", {})
-      self.debug('Connected, slot data is: %s', self.slot_data)
-      connector = MercenariesConnector(self, self.ipc, self.slot_data)
-      asyncio.create_task(self.sync_with_game(connector))
+    if _MERCS_DEBUG:
+      self.debug('on_package: %s %s', cmd, args)
+    match cmd:
+      case 'Connected':
+        self.slot_data = args.get("slot_data", {})
+        self.debug('Connected, slot data is: %s', self.slot_data)
+        connector = MercenariesConnector(self, self.ipc, self.slot_data)
+        asyncio.create_task(self.sync_with_game(connector))
+      case 'SetReply':
+        if 'key' in args and 'value' in args:
+          self.ap_state[args['key']] = args['value']
 
   async def send_msgs(self, msgs):
     if _MERCS_DEBUG:
@@ -86,17 +92,31 @@ class MercenariesContext(SuperContext):
 
   async def sync_with_game(self, connector):
     self.debug('Game sync running.')
+    await self.send_msgs([
+      {'cmd': 'Set', 'key': 'items_synced', 'want_reply': True, 'default': 0,
+        'operations': [{'operation': 'default', 'value': 0}]}
+      ])
     while self.server:
       try:
         # self.debug('Starting sync iteration')
-        connector.send_items([item.item for item in self.items_received])
+        if not self.ap_state:
+          self.debug('Still waiting for state from server.')
+          continue
+        connector.send_items(
+          [item.item for item in self.items_received],
+          self.ap_state.get('items_synced', 0))
+        await self.send_msgs([
+          {'cmd': 'Set', 'key': 'items_synced', 'want_reply': True, 'default': 0,
+           'operations': [{'operation': 'replace', 'value': len(self.items_received)}]}
+          ])
         self.locations_checked |= connector.get_new_checks(self.missing_locations)
         await self.check_locations(self.locations_checked)
         if connector.current_chapter() > self.slot_data['goal']:
           self.finished_game = True
-        await asyncio.sleep(5)
       except IPCError:
         # self.debug('IPC error, sleeping')
+        pass
+      finally:
         await asyncio.sleep(5)
     self.debug('Game sync exiting.')
 
