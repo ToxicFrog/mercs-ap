@@ -88,15 +88,15 @@ class MercenariesContext(SuperContext):
     self.debug('Game sync running.')
     while self.server:
       try:
-        self.debug('Starting sync iteration')
-        connector.put_new_items([item.item for item in self.items_received])
+        # self.debug('Starting sync iteration')
+        connector.send_items([item.item for item in self.items_received])
         self.locations_checked |= connector.get_new_checks(self.missing_locations)
         await self.check_locations(self.locations_checked)
         if connector.current_chapter() > self.slot_data['goal']:
           self.finished_game = True
         await asyncio.sleep(5)
       except IPCError:
-        self.debug('IPC error, sleeping')
+        # self.debug('IPC error, sleeping')
         await asyncio.sleep(5)
     self.debug('Game sync exiting.')
 

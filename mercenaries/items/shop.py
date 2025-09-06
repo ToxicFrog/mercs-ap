@@ -15,9 +15,7 @@ class ShopItem(NamedTuple):
     return f'{self.type.capitalize()}: {self.title}'
 
   def count(self, options):
-    # TODO: allow duplicates, do something useful if they stack like discounts
-    # or coupons
-    return 1
+    return options.shop_unlock_count
 
   def groups(self):
     return {'progression', 'shop', self.type}

@@ -13,4 +13,11 @@ release/mercenaries-${VERSION}.apworld: mercenaries/* mercenaries/*/*
 	cp release/mercenaries.apworld release/mercenaries-${VERSION}.apworld
 	cp release/mercenaries.apworld ~/.local/share/Archipelago/worlds/
 
-.PHONY: apworld
+yaml: apworld
+	archipelago "Generate Template Options"
+	cp ~/Games/Archipelago/Players/Templates/Mercenaries.yaml ~/Games/Archipelago/Players
+
+generate: apworld
+	archipelago Generate </dev/null
+
+.PHONY: apworld yaml generate

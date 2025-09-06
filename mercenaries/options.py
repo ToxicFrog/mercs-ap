@@ -99,6 +99,29 @@ class IntelTarget(Range):
   range_end = 12
   default = 3
 
+class ShopUnlockCount(Range):
+  '''
+  Number of copies of each shop unlock to put in the pool. Finding duplicates
+  will give you discounts on those items.
+  '''
+  display_name = 'Shop Unlock Count'
+  range_start = 1
+  range_end = 5
+  default = 1
+
+class ShopDiscountPercent(Range):
+  '''
+  Discount factor applied for each duplicate unlock. 0 means no discount, 100
+  means a 100% discount (i.e. the item becomes free).
+
+  Stacks multiplicatively: two 50% discounts give you 50% of 50% = 25% the list
+  price.
+  '''
+  display_name = 'Shop Discount %'
+  range_start = 0
+  range_end = 100
+  default = 50
+
 @dataclass
 class MercenariesOptions(PerGameCommonOptions):
   goal: Goal
@@ -107,3 +130,5 @@ class MercenariesOptions(PerGameCommonOptions):
   vanilla_intel_target: VanillaIntelTarget
   intel_in_pool: IntelAmount
   intel_target: IntelTarget
+  shop_unlock_count: ShopUnlockCount
+  shop_discount_percent: ShopDiscountPercent

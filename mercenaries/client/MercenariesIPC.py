@@ -23,6 +23,8 @@ Useful but not yet usable addresses --
 1941060 - money counter in the tutorial
 '''
 
+from typing import List
+
 from .pine import Pine
 from .shop import MafiaShop
 from .lua import GCObject, Lua_TObject, LUA_TNUMBER, LUA_TSTRING
@@ -69,6 +71,7 @@ class MercenariesIPC:
     self.L_ptr = None
     self.intel_total = None
     self.missions = None
+    self.shop_txn = 0
 
   def inject(self, L_ptr):
     print('Starting code injection.')
@@ -183,7 +186,7 @@ class MercenariesIPC:
     else:
       return None
 
-  def is_mission_complete(self, faction, mission):
+  def is_mission_complete(self, faction: str, mission) -> bool:
     self.validate()
     missions = self.refresh_mission_list()
     if not missions:
@@ -191,7 +194,7 @@ class MercenariesIPC:
     return mission < missions.getfield(faction).val()
 
   #### For sending things to the game ####
-  def adjust_money(self, delta):
+  def adjust_money(self, delta: int):
     '''
     Add (or subtract) the given amount of money from the player's account.
 
@@ -208,32 +211,35 @@ class MercenariesIPC:
     self.pine.pokef32(money_ptr, self.pine.peekf32(money_ptr) + delta)
     pass
 
-  def set_unlocked_shop_items(self, items):
+  def set_unlocked_shop_items(self, items: List[List[int]], discount_factor: float):
     '''
-    Set the unlocked shop items to the given list. Removes excess items from the
-    game and appends new items.
+    Sets the unlocked shop items to match the given list.
+
+    The first element in each entry should be the item tag; the second should
+    be the number of copies of that item (>= 1). Excess items are applied as
+    discounts based on the discount_factor.
 
     Since this is potentially expensive (nearly 200 writes once everything is
     unlocked!) it does some simple checks first and skips updating if it doesn't
     need to.
     '''
     self.validate()
-    game_count = self.shop.unlock_count()
+
+    # Number of distinct shop unlocks found in AP
+    txn = sum(item[1] for item in items)
+    # Number of actual unlocks that turns into once duplicates are merged
     ap_count = len(items)
-    if ap_count == 0:
-      self.shop.update_unlocks([])
-    elif game_count == ap_count and self.shop.unlocks[-1].tag() == items[-1]:
-      # Same number of unlocked items in-game as in AP, and the most recently
-      # unlocked item has the same ID as the most recently unlocked AP item,
-      # so we assume we've neither received a new item from AP nor has the player
-      # unlocked something new.
-      return
-    elif game_count > ap_count:
-      # Player has unlocked something new in-game. Roll it back.
-      self.shop.unlock_count(ap_count)
-    elif ap_count > game_count:
-      # Player has received new unlocks in AP. Grant them.
-      self.shop.update_unlocks(items)
+    # Number of unlocks the player has in-game.
+    game_count = self.shop.unlock_count()
+
+    if ap_count != game_count or self.shop_txn != txn:
+      # Either:
+      # - the player has found a new unlock in-game we need to re-lock;
+      # - the player has received a new unlock through AP; or
+      # - the player has received a duplicate unlock and we need to apply a discount
+      print(f'Updating shop items (game: count={game_count}, txn={self.shop_txn}; ap: count={ap_count}, txn={txn})')
+      self.shop.set_unlocks(items, discount_factor)
+      self.shop_txn = txn
 
   def set_intel(self, amount, target):
     self.validate()

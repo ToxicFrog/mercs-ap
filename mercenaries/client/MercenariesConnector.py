@@ -51,16 +51,21 @@ class MercenariesConnector:
 
   def get_new_checks(self, missing: Set[int]):
     # TODO: this is where missable handling needs to go once it's implemented.
-    print('missing', missing)
+    # print('missing', missing)
     found = {
       id for id in missing
       if self.game.is_checked(location_by_id(id))
     }
-    print('found', found)
+    # if found:
+    #   print('found', found)
     return found
 
   #### Writers ####
-  def put_new_items(self, items: List[int]):
+  def send_items(self, items: List[int]):
+    '''
+    Send the specified items to the game. This is the complete list of items the
+    client knows we have received, which may include stuff we've already sent.
+    '''
     items = [item_by_id(id) for id in items]
     self.all_shop_items = [item for item in items if 'shop' in item.groups()]
     self.all_money_items = [item for item in items if 'money' in item.groups()]
@@ -80,11 +85,23 @@ class MercenariesConnector:
       logger.info(f'Error sending items to game, will retry later: {e}')
 
   def converge_shop_items(self):
+    # We send this every time and trust the IPC library to not duplicate send
+    # if unneeded.
     # This is idempotent, so we just send the whole set of unlocks each time.
     # We do this even if the set of unlocks hasn't changed, because the player
     # may have unlocked new items in-game and we need to override that!
     print(f'Unlocking items: {[item.name() for item in self.all_shop_items]}')
-    self.game.set_unlocked_shop_items([item.tag for item in self.all_shop_items])
+    unlock_list = []
+    by_tag = {}
+    for item in self.all_shop_items:
+      if item.tag in by_tag:
+        by_tag[item.tag][1] += 1
+      else:
+        unlock = [item.tag, 1]
+        unlock_list.append(unlock)
+        by_tag[item.tag] = unlock
+
+    self.game.set_unlocked_shop_items(unlock_list, 1.0 - self.options['shop_discount_percent']/100)
     self.sent_shop_items = self.all_shop_items
 
   def converge_money_items(self):
@@ -92,15 +109,16 @@ class MercenariesConnector:
     # record them as send them.
     # If the send fails, adjust_money will throw and we don't do the append.
     # TODO: this ends up sending the money every time we connect, which is a
-    # problem. We need to record in the game, possibly in the unused last opcode
-    # of util_PrintDebugMsg, how many items we've sent, and only send items that
-    # are newer than that.
+    # problem. We need to use the AP Set/Get API to record which ones have been
+    # successfully sent.
     for item in self.all_money_items[len(self.sent_money_items):]:
       print(f'Sending money: {item.name()}')
       self.game.adjust_money(item.amount)
       self.sent_money_items.append(item)
 
   def converge_intel_items(self):
+    # This is fully idempotent and is a single call to setk() in practice so we
+    # just do it unconditionally each time.
     chapter = self.game.current_chapter()
     suit = ['clubs', 'diamonds', 'hearts', 'spades'][chapter-1]
     total_intel = sum(
