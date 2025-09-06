@@ -1,5 +1,33 @@
 # Mercenaries Archipelago
 
+## TODO
+
+- Bugfixes:
+  - Non-idempotency of money
+- Checks:
+  - Number of bounties
+    - Option to use vanilla thresholds, or set manually
+    - Option to set point beyond which there will be no progression items
+    - Use combat logic so that all bounties aren't in logic from the start, avoid KH problem
+  - Investigate using the same technique for challenges/vehicles
+- Items:
+  - Shop discounts
+    - Could be separate items or a consequence of having duplicates in the pool
+  - Faction reputation bonuses
+    - Probably needs more code injection
+  - Faction floor increases
+    - Can be done with K-hacking on AttemptFactionMoodClamp, assuming it gets called often enough
+  - Stuff that needs more research to see if it's possible:
+    - Airstrike coupons
+    - Resource refills
+- Hints:
+  - Hint what number cards are carrying when their location is revealed by a mission
+    - Need to send a CreateHints packet for the locations iff we haven't checked them yet
+  - Perhaps: capturing cards alive gives hints for where your progression items are
+    - I think this requires us to bake in the hints at generation time?
+
+## Other notes
+
 Notes on AP for Mercenaries: Playground of Destruction.
 
 Totals
