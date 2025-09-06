@@ -25,7 +25,7 @@ Useful but not yet usable addresses --
 
 from .pine import Pine
 from .shop import MafiaShop
-from .lua import GCObject, Lua_Number, LUA_TNUMBER, LUA_TSTRING
+from .lua import GCObject, Lua_TObject, LUA_TNUMBER, LUA_TSTRING
 from .lopcode import LuaOpcode
 from .deck import DeckOf52
 
@@ -36,7 +36,7 @@ class MercenariesIPC:
   pine: Pine
   shop: MafiaShop
   L_ptr: int = -1
-  intel_total: Lua_Number
+  intel_total: Lua_TObject
   deck: DeckOf52
 
   def __init__(self, pine_path: str) -> None:
@@ -79,18 +79,18 @@ class MercenariesIPC:
 
     # Hook GetIntelTotal to return a value of our choice.
     # Grab a handle to constant 0 so we can adjust it at our leisure.
-    gameflow_GetIntelTotal = L.getglobal('gameflow_GetIntelTotal').val
-    self.intel_total = gameflow_GetIntelTotal.getk(0)
-    self.intel_total.setval(0.0)
+    GetIntelTotal = L.getglobal('gameflow_GetIntelTotal').val()
+    self.intel_total = GetIntelTotal.getk(0)
+    self.intel_total.set(0.0)
 
     # Replace the function body with an immediate return.
     # code[0] is already LOADK r1, 0 -- i.e. exactly what we want -- so we just
     # replace code[1] with a return.
-    gameflow_GetIntelTotal.patch(1, [LuaOpcode('RETURN', A=1, B=2)])
+    GetIntelTotal.patch(1, [LuaOpcode('RETURN', A=1, B=2)])
 
     # Modify gameflow_ShouldGameStateApply to exfiltrate information about
     # mission completion state (and exit early if called without arguments).
-    ShouldGameStateApply = L.getglobal('gameflow_ShouldGameStateApply').val
+    ShouldGameStateApply = L.getglobal('gameflow_ShouldGameStateApply').val()
     ShouldGameStateApply.patch(24, [
       LuaOpcode('SETGLOBAL', A=5, Bx=1), # set _G.mission_accepted to r5, which is the info table
       LuaOpcode('TEST', A=0, B=0, C=0), # test if r0 is nil, and if so
@@ -99,12 +99,12 @@ class MercenariesIPC:
 
     # Hook the debug output function to call stuff we designate instead.
     # First, make it a no-op in case it gets called while we're wiggling it.
-    PrintDebugMsg = L.getglobal('util_PrintDebugMsg').val
+    PrintDebugMsg = L.getglobal('util_PrintDebugMsg').val()
     PrintDebugMsg.patch(0, [LuaOpcode('RETURN', A=0, B=1)])
 
-    # Replace its constant table with references to the functions we want to call.
-    PrintDebugMsg.setk(0, LUA_TSTRING, L._G.val.getkey('gameflow_ShouldGameStateApply').val)
-    PrintDebugMsg.setk(1, LUA_TSTRING, L._G.val.getkey('gameflow_AttemptAceMissionUnlock').val)
+    # Replace its constant table with the names of the functions we want to call
+    PrintDebugMsg.setk(0, L._G.val().getnode('gameflow_ShouldGameStateApply').k)
+    PrintDebugMsg.setk(1, L._G.val().getnode('gameflow_AttemptAceMissionUnlock').k)
 
     # Replace the function body with calls to those functions.
     PrintDebugMsg.patch(1, [
@@ -118,8 +118,13 @@ class MercenariesIPC:
     # Nop out the early return.
     PrintDebugMsg.patch(0, [LuaOpcode('MOVE', A=0, B=0)])
 
+    # Above could perhaps be more cleanly expressed as:
+    # with PrintDebugMsg.lock():
+    #   PrintDebugMsg.setk
+    #   PrintDebugMsg.patch
+
     # Now redirect Debug_Printf to alias util_PrintDebugMsg.
-    L.getglobal('Debug_Printf').setval(PrintDebugMsg.addr)
+    L.getglobal('Debug_Printf').set(PrintDebugMsg)
 
     # Could do a similar hook of LoadNoMissionState
     # Starting at instruction 28, the chapter and current AN, PRC, Mafia, and SK missions
@@ -172,9 +177,9 @@ class MercenariesIPC:
   def refresh_mission_list(self):
     if not self.missions:
       L = GCObject(self.pine, self.L_ptr)
-      self.missions = L._G.val.getnode('mission_accepted')
+      self.missions = L.getglobal('mission_accepted')
     if self.missions:
-      return self.missions.v.val
+      return self.missions.val()
     else:
       return None
 
@@ -183,7 +188,7 @@ class MercenariesIPC:
     missions = self.refresh_mission_list()
     if not missions:
       return False
-    return mission < missions.getfield(faction).val
+    return mission < missions.getfield(faction).val()
 
   #### For sending things to the game ####
   def adjust_money(self, delta):
@@ -232,4 +237,4 @@ class MercenariesIPC:
 
   def set_intel(self, amount, target):
     self.validate()
-    self.intel_total.setval((amount/target) * 80.0)
+    self.intel_total.set((amount/target) * 80.0)

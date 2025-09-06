@@ -1,7 +1,7 @@
 import socket
 import struct
 
-from .lua import TObject, GCObject, Lua_Nil, Lua_GCFunction, Lua_GCTable
+from .lua import TObject, GCObject
 from .pine import Pine
 
 pcsx2: Pine = Pine(path = '/run/user/8509/pcsx2.sock')
@@ -23,6 +23,6 @@ print(f'L is at: {Lptr:08X}')
 
 L = GCObject(pcsx2, Lptr)
 assert L.tt == 8, 'L must be LUA_TTHREAD'
-assert L._G.tt == 5, 'L->gt must be LUA_TTABLE'
+assert L._G.tt() == 5, 'L->gt must be LUA_TTABLE'
 
 L.dump(L.initialSeen(), '')

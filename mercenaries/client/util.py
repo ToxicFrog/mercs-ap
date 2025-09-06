@@ -1,20 +1,41 @@
-from typing import Any
+from typing import Any, NamedTuple
 
 from .pine import Pine
+from .lopcode import LuaOpcode
 
-class MemVarInt:
+class MemVar(NamedTuple):
   pine: Pine
   addr: int
-  def __init__(self, pine: Pine, addr: int):
-    self.pine = pine
-    self.addr = addr
+
+class MemVarInt(MemVar):
   def __repr__(self):
     return f'MemVarInt(${self.addr:08X})'
   def __call__(self, val=None):
-    if val is None:
-      return self.pine.peek32(self.addr)
+    if val is not None:
+      self.pine.poke32(self.addr, val)
+      return self()
     else:
-      return self.pine.poke32(self.addr, val)
+      return self.pine.peek32(self.addr)
+
+class MemVarFloat(MemVar):
+  def __repr__(self):
+    return f'MemVarFloat(${self.addr:08X})'
+  def __call__(self, val=None):
+    if val is not None:
+      self.pine.pokef32(self.addr, val)
+      return self()
+    else:
+      return self.pine.peekf32(self.addr)
+
+class MemVarOpcode(MemVar):
+  def __repr__(self):
+    return repr(self())
+  def __call__(self, val=None):
+    if val is not None:
+      self.pine.poke32(self.addr, val.op)
+      return self()
+    else:
+      return LuaOpcode(self.pine.peek32(self.addr))
 
 def MemVarArray(pine: Pine, T: Any, base_ptr: int, size: int, count: int):
   return [
