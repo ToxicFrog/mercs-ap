@@ -26,6 +26,9 @@ class MissionLocation(NamedTuple):
   def should_include(self, options):
     return self.min_chapter <= options.goal
 
+  def chapter(self):
+    return self.min_chapter
+
   def groups(self):
     if self.faction == 'A':
       return {'missions', 'allies_missions'}

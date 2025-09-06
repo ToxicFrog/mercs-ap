@@ -159,7 +159,8 @@ class MercenariesWorld(World):
     for location in locations.all_locations():
       if not location.should_include(self.options):
         continue
-      chapter = chapters[location.min_chapter]
+      chapter = chapters[location.chapter()]
+      print(f'Including location "{location.name()}" in {chapter}')
       chapter.locations.append(MercenariesLocation(self, location, chapter))
       self.location_count += 1
 

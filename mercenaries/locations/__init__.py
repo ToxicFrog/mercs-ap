@@ -1,4 +1,4 @@
-"""
+'''
 Location catalogue for Mercenaries.
 
 At the moment, the only locations implemented are:
@@ -19,7 +19,21 @@ In the future the desire is to also add:
   - 53+57 treasures
   - 59+51 blueprints
 - 16+13 challenges
-"""
+'''
+
+'''
+Location protocol
+
+For generation, a location must implement:
+- an id field, containing the unique location ID
+- name() to return the unique user-facing location name
+- should_include(options) to check if the location should be included in the game at all
+- chapter() to return the chapter [1..4] in which the location should first be logically available
+- access_rule(world) to return the logical access rule for the location
+
+At runtime, the location additionally needs:
+- is_checked(MercenariesIPC) query if the location is checked in-game
+'''
 
 from itertools import chain
 
