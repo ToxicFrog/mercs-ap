@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import Dict, FrozenSet
 
 from BaseClasses import CollectionState, Item, ItemClassification, Location, MultiWorld, Region, Tutorial, LocationProgressType
@@ -97,8 +98,11 @@ class MercenariesWorld(World):
   def create_item(self, name: str) -> MercenariesItem:
     return MercenariesItem(self, items.item_by_name(name))
 
-  def create_filler(self):
-    return self.create_item('$50,000')
+  def create_filler(self, amount):
+    return [
+      self.create_item(name)
+      for name in random.choices(list(self.item_name_groups['filler']), k=amount)
+    ]
 
   def generate_early(self) -> None:
     # Option consistency checks
@@ -171,8 +175,9 @@ class MercenariesWorld(World):
 
     assert slots_left >= 0, f'Tried to place more items ({self.location_count - slots_left}) than we have checks ({self.location_count}), giving up'
 
-    for _ in range(slots_left):
-      self.multiworld.itempool.append(self.create_filler())
+    print(f'Remaining {slots_left} slots will be populated with filler.')
+    for item in self.create_filler(slots_left):
+      self.multiworld.itempool.append(item)
 
   def set_rules(self):
     # All region and location access rules were defined in create_regions, so we just need the
