@@ -65,7 +65,7 @@ class CardIntelItem(NamedTuple):
       return 0
 
     if options.progressive_intel:
-      return options.goal # One copy per chapter
+      return int(options.goal) # One copy per chapter
     elif suit_to_chapter(self.suit) > options.goal:
       return 0
     else:
