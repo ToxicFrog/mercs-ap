@@ -22,14 +22,6 @@ stats = PDAStats(pcsx2)
 print(stats.vehicles_destroyed())
 print(stats.bounties_found())
 
-sys.exit(0)
-
-print([
-  pcsx2.peekf32(addr) or ''
-  for addr in range(0x005a7264, 0x005a7680+1, 4)
-])
-
-
 def readCollectableCount(addr):
   idx = pcsx2.peek16(addr)
   if idx == 0:

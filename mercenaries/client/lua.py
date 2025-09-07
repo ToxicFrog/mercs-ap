@@ -429,7 +429,7 @@ class Lua_GCUserdata(Lua_GCObject):
   def hasMetatable(self, seen):
     return (
       self.metatable is not None
-      and self.metatable.tt() != LUA_TNIL
+      and self.metatable.tt != LUA_TNIL
       and self.metatable.addr != seen['_METATABLE'])
 
   def dump(self, seen, indent = ''):

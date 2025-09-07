@@ -17,6 +17,17 @@ class MemVarInt(MemVar):
     else:
       return self.pine.peek32(self.addr)
 
+class MemVarInt16(MemVar):
+  def __repr__(self):
+    return f'MemVarInt16(${self.addr:08X})'
+  def __call__(self, val=None):
+    if val is not None:
+      self.pine.poke16(self.addr, val)
+      return self()
+    else:
+      return self.pine.peek16(self.addr)
+
+
 class MemVarFloat(MemVar):
   def __repr__(self):
     return f'MemVarFloat(${self.addr:08X})'

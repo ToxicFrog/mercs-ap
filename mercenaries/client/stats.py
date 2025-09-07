@@ -1,13 +1,13 @@
 from .pine import Pine
 from .statsdata import *
-from .util import MemVarFloat, MemVarArray, MemVarInt
+from .util import MemVarFloat, MemVarArray, MemVarInt16
 
 class PDAStats:
   def __init__(self, pine):
     self.pine = pine
     self.destruction = MemVarArray(pine, MemVarFloat, VEHICLES_DESTROYED_ADDR, 4, len(VEHICLE_NAMES))
     self.bounties = {
-      name: MemVarInt(pine, addr)
+      name: MemVarInt16(pine, addr)
       for name,addr in BOUNTY_IDX_ADDRS.items()
     }
 
