@@ -86,7 +86,10 @@ class Lua_TObject:
   def __str__(self):
     if not self.valid():
       return f'<<invalid TObject${self.addr:08X}>>'
-    return f'TObject({str(self.val())})'
+    if self._tt() < 4:
+      return f'TObject({str(self.val())})'
+    else:
+      return str(self.val())
 
   def __eq__(self, other):
     return self.addr == other.addr
