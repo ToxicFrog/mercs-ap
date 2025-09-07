@@ -321,6 +321,11 @@ typedef struct Table {
 005007f4 - pointer to character info? RA derefs this and then adds 0x74 to get model index
 004a4cac - cheat flag or maybe saveload flag? most RAs are configured to reset when this is nonzero
 
+Retrieve RA achievements definition with:
+curl https://retroachievements.org/dorequest.php \
+  --data 'r=achievementsets&m=316ad24970b2f19558bc2bda7eb98d81' \
+  -A 'PCSX2 v2.4.0 (nixos)' | jq > achievements
+
 
 ; fulfill first three SK missions in the south province
 N:0xX005131e0=1

@@ -30,8 +30,10 @@ GCObject is a supertype of the various garbage-collectible lua types: strings,
 tables, functions, fulluserdata, and threads. The API is currently being redesigned
 for better performance and consistency with TObject.
 '''
+from contextlib import contextmanager
 from typing import Any
 
+from .lopcode import LuaOpcode
 from .pine import Pine
 from .util import MemVarInt, MemVarOpcode
 
@@ -356,6 +358,7 @@ class Lua_GCFunction(Lua_GCObject):
       self.cfunction = pine.peek32(addr + 12)
       self.fenv = None
     else:
+      self.edits = None
       self.proto = self.Proto(pine, pine.peek32(addr + 12))
       self.fenv = TObject(pine, addr + 16)
 
@@ -371,22 +374,56 @@ class Lua_GCFunction(Lua_GCObject):
     '''
     return self.proto.klist[n]
 
-  def setk(self, n, val, tt=None):
+  @contextmanager
+  def lock(self):
+    '''
+    Lock the function in preparation to modify it. While locked, any constant or
+    code modifications to the function are buffered. When the lock is released,
+    the function's first instruction is replaced with a jump-to-self, all
+    the pending modifications are applied, and then the first instruction is
+    restored, to ensure that the function is never executed in a half-modified
+    state.
+    '''
+    self.edits = []
+    try:
+      yield None
+    finally:
+      # lock function by making first instruction jump-to-self
+      self.op0 = self.proto.code[0]()
+      self.proto.code[0](LuaOpcode('JMP', sBx=-1))
+      # apply edits; code editor will update self.op0 if needed
+      for edit in self.edits:
+        edit()
+      self.edits = None
+      # unlock first instruction
+      self.proto.code[0](self.op0)
+      self.op0 = None
+
+  def setk(self, k, val, tt=None):
     '''
     Set the given constant table entry. Equivalent to calling set() on the underlying TObject.
+    Use only inside a 'with fn.lock()' block.
     '''
-    self.proto.klist[n].set(val, tt=tt)
+    def apply():
+      self.proto.klist[k].set(val, tt=tt)
+    self.edits.append(apply)
 
   def patch(self, i, code):
     '''
-    Patch function bytecode starting at instruction i. Note that this is not
-    atomic, each instruction is written individually.
+    Patch function bytecode starting at instruction i.
+    Use only inside a 'with fn.lock()' block.
     '''
     assert i+len(code) < self.proto.sizecode
-    for opcode in code:
-      # print(f'[patch {self.name}] @ {self.proto.codeptr:08X}[{i}]: {opcode.pprint(self.proto, i)}')
-      self.proto.code[i](opcode)
-      i += 1
+    def apply():
+      nonlocal i
+      for opcode in code:
+        # print(f'[patch {self.name}] @ {self.proto.codeptr:08X}[{i}]: {opcode.pprint(self.proto, i)}')
+        if i == 0:
+          self.op0 = opcode
+        else:
+          self.proto.code[i](opcode)
+        i += 1
+    self.edits.append(apply)
 
   def dump(self, seen, indent=''):
     if self.isC:

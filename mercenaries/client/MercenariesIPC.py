@@ -80,63 +80,65 @@ class MercenariesIPC:
     print('Starting code injection.')
     # Initialize Lua.
     # Caller has already done consistency checks so hopefully we don't crash.
-    self.L_ptr = L_ptr
     L = GCObject(self.pine, L_ptr)
+
+    # Grab all the things we want to modify *first*, so that if any of them are
+    # nil we know the VM isn't done starting up yet and can retry later.
+    # TODO: maybe getglobal and getnode should raise KeyError?
+    GetIntelTotal = L.getglobal('gameflow_GetIntelTotal')
+    ShouldGameStateApply = L.getglobal('gameflow_ShouldGameStateApply')
+    PrintDebugMsg = L.getglobal('util_PrintDebugMsg')
+    Debug_Printf = L.getglobal('Debug_Printf')
+    AttemptAceMissionUnlockNode = L._G.val().getnode('gameflow_AttemptAceMissionUnlock')
+
+    if not (GetIntelTotal and ShouldGameStateApply and PrintDebugMsg
+            and Debug_Printf and AttemptAceMissionUnlockNode):
+      raise IPCError('lua_State is still initializing')
 
     # Hook GetIntelTotal to return a value of our choice.
     # Grab a handle to constant 0 so we can adjust it at our leisure.
-    GetIntelTotal = L.getglobal('gameflow_GetIntelTotal').val()
-    self.intel_total = GetIntelTotal.getk(0)
+    self.intel_total = GetIntelTotal.val().getk(0)
     self.intel_total.set(0.0)
 
     # Replace the function body with an immediate return.
     # code[0] is already LOADK r1, 0 -- i.e. exactly what we want -- so we just
     # replace code[1] with a return.
-    GetIntelTotal.patch(1, [LuaOpcode('RETURN', A=1, B=2)])
+    with GetIntelTotal.val().lock():
+      GetIntelTotal.val().patch(1, [LuaOpcode('RETURN', A=1, B=2)])
 
     # Modify gameflow_ShouldGameStateApply to exfiltrate information about
     # mission completion state (and exit early if called without arguments).
-    ShouldGameStateApply = L.getglobal('gameflow_ShouldGameStateApply').val()
-    ShouldGameStateApply.patch(24, [
-      LuaOpcode('SETGLOBAL', A=5, Bx=1), # set _G.mission_accepted to r5, which is the info table
-      LuaOpcode('TEST', A=0, B=0, C=0), # test if r0 is nil, and if so
-      LuaOpcode('JMP', sBx=50), # jump to the end of the function
-    ])
+    with ShouldGameStateApply.val().lock():
+      ShouldGameStateApply.val().patch(24, [
+        LuaOpcode('SETGLOBAL', A=5, Bx=1), # set _G.mission_accepted to r5, which is the info table
+        LuaOpcode('TEST', A=0, B=0, C=0), # test if r0 is nil, and if so
+        LuaOpcode('JMP', sBx=50), # jump to the end of the function
+      ])
 
     # Hook the debug output function to call stuff we designate instead.
-    # First, make it a no-op in case it gets called while we're wiggling it.
-    PrintDebugMsg = L.getglobal('util_PrintDebugMsg').val()
-    PrintDebugMsg.patch(0, [LuaOpcode('RETURN', A=0, B=1)])
+    with PrintDebugMsg.val().lock():
+      # Replace its constant table with the names of the functions we want to call
+      PrintDebugMsg.val().setk(0, L._G.val().getnode('gameflow_ShouldGameStateApply').k)
+      PrintDebugMsg.val().setk(1, AttemptAceMissionUnlockNode.k)
 
-    # Replace its constant table with the names of the functions we want to call
-    PrintDebugMsg.setk(0, L._G.val().getnode('gameflow_ShouldGameStateApply').k)
-    PrintDebugMsg.setk(1, L._G.val().getnode('gameflow_AttemptAceMissionUnlock').k)
-
-    # Replace the function body with calls to those functions.
-    PrintDebugMsg.patch(1, [
-      LuaOpcode('GETGLOBAL', A=0, Bx=0),
-      LuaOpcode('CALL', A=0, B=1, C=1),
-      LuaOpcode('GETGLOBAL', A=0, Bx=1),
-      LuaOpcode('CALL', A=0, B=1, C=1),
-      LuaOpcode('RETURN', A=0, B=1),
-    ])
-
-    # Nop out the early return.
-    PrintDebugMsg.patch(0, [LuaOpcode('MOVE', A=0, B=0)])
-
-    # Above could perhaps be more cleanly expressed as:
-    # with PrintDebugMsg.lock():
-    #   PrintDebugMsg.setk
-    #   PrintDebugMsg.patch
+      # Replace the function body with calls to those functions.
+      PrintDebugMsg.val().patch(0, [
+        LuaOpcode('GETGLOBAL', A=0, Bx=0),
+        LuaOpcode('CALL', A=0, B=1, C=1),
+        LuaOpcode('GETGLOBAL', A=0, Bx=1),
+        LuaOpcode('CALL', A=0, B=1, C=1),
+        LuaOpcode('RETURN', A=0, B=1),
+      ])
 
     # Now redirect Debug_Printf to alias util_PrintDebugMsg.
-    L.getglobal('Debug_Printf').set(PrintDebugMsg)
+    Debug_Printf.set(PrintDebugMsg)
 
     # Could do a similar hook of LoadNoMissionState
     # Starting at instruction 28, the chapter and current AN, PRC, Mafia, and SK missions
     # are in registers r0, r1, r2, r3, and r4
     # and 28 through 57 are all debug output in five batches of six instructions each
 
+    self.L_ptr = L_ptr
     print('Code injection complete.')
 
 
