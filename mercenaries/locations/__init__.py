@@ -33,6 +33,7 @@ For generation, a location must implement:
 
 At runtime, the location additionally needs:
 - is_checked(MercenariesIPC) query if the location is checked in-game
+- is_hintable(found) given a set of found locations, return true if one of them granted a hint for what this one contains
 '''
 
 from itertools import chain

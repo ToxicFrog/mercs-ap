@@ -20,10 +20,11 @@ CARDS = {}
 
 class CardLocation(NamedTuple):
   id: int
-  min_chapter: int
-  max_chapter: int
   rank: int
   suit: str
+  min_chapter: int
+  max_chapter: int
+  hint_mission: str # What mission gives you a hint for this card when completing it?
   mission: str = None
   rank_names = [None, 'Ace', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King']
 
@@ -61,6 +62,11 @@ class CardLocation(NamedTuple):
   def is_checked(self, game):
     return game.is_card_verified(self.suit, self.rank)
 
+  def is_hintable(self, found):
+    if not self.hint_mission:
+      return False
+    return MISSIONS[self.hint_mission].short_name() in found
+
   def access_rule(self, world):
     # If this card is located inside a mission, the card is accessible iff the
     # mission is.
@@ -72,49 +78,75 @@ class CardLocation(NamedTuple):
     # here.
     return lambda _: True
 
+def mkcard(*args):
+  return CardLocation(next_id(), *args)
+
 # Fields are: id, min chapter, max chapter, rank, suit, associated mission if any
 CARDS = {
   card.short_name(): card
-  for card in chain(
-    # Chapter 1: Clubs.
-    # Two of Clubs is in the tutorial.
-    [CardLocation(next_id(), 0, 4,    2, 'clubs', 'A1')],
-    [CardLocation(next_id(), 1, 1, rank, 'clubs') for rank in range(3,11)],
-    # Face cards are in Mafia, PRC, SK, and AN missions.
-    [
-      # TODO: face cards might become missable once we complete the ace, not just
-      # number cards.
-      CardLocation(next_id(), 1, 4, 11, 'clubs', 'M3'),
-      CardLocation(next_id(), 1, 4, 12, 'clubs', 'C3'),
-      CardLocation(next_id(), 1, 4, 13, 'clubs', 'K3'),
-      CardLocation(next_id(), 1, 4,  1, 'clubs', 'A3'),
-    ],
-    # Chapter 2: Diamonds.
-    [CardLocation(next_id(), 2, 2, rank, 'diamonds') for rank in range(2,11)],
-    # Face cards are in SK, Mafia, PRC, and AN missions.
-    [
-      CardLocation(next_id(), 2, 4, 11, 'diamonds', 'K6'),
-      CardLocation(next_id(), 2, 4, 12, 'diamonds', 'M6'),
-      CardLocation(next_id(), 2, 4, 13, 'diamonds', 'C6'),
-      CardLocation(next_id(), 2, 4,  1, 'diamonds', 'A6'),
-    ],
-    # Chapter 3: Hearts.
-    # Face cards are in PRC, SK, Mafia, and AN missions.
-    [CardLocation(next_id(), 3, 3, rank, 'hearts') for rank in range(2,11)],
-    [
-      CardLocation(next_id(), 3, 4, 11, 'hearts', 'C9'),
-      CardLocation(next_id(), 3, 4, 12, 'hearts', 'K9'),
-      CardLocation(next_id(), 3, 4, 13, 'hearts', 'M9'),
-      CardLocation(next_id(), 3, 4,  1, 'hearts', 'A9'),
-    ],
-    # Chapter 4:
-    [CardLocation(next_id(), 4, 4, rank, 'spades') for rank in range(2,11)],
-    # Face cards are in Mafia, PRC, SK, and AN missions.
-    [
-      CardLocation(next_id(), 4, 4, 11, 'spades', 'M12'),
-      CardLocation(next_id(), 4, 4, 12, 'spades', 'C12'),
-      CardLocation(next_id(), 4, 4, 13, 'spades', 'K12'),
-      CardLocation(next_id(), 4, 4,  1, 'spades', 'A11'),
-    ],
-  )
+  for card in [
+    # Chapter 1: Clubs
+    # Missions without hints: M3 K3 A3
+    mkcard( 2, 'clubs', 0, 1, None, 'A1'),
+    mkcard( 3, 'clubs', 1, 1, 'C1'),
+    mkcard( 4, 'clubs', 1, 1, 'M1'),
+    mkcard( 5, 'clubs', 1, 1, 'K1'),
+    mkcard( 6, 'clubs', 1, 1, 'K2'),
+    mkcard( 7, 'clubs', 1, 1, 'M2'),
+    mkcard( 8, 'clubs', 1, 1, 'C2'),
+    mkcard( 9, 'clubs', 1, 1, 'C3'),
+    mkcard(10, 'clubs', 1, 1, 'A2'),
+    mkcard(11, 'clubs', 1, 1, None, 'M3'),
+    mkcard(12, 'clubs', 1, 1, None, 'C3'),
+    mkcard(13, 'clubs', 1, 1, None, 'K3'),
+    mkcard( 1, 'clubs', 1, 1, None, 'A3'),
+
+    # Chapter 2: Diamonds
+    # Missions without hints: C6 M6 A6
+    mkcard( 2, 'diamonds', 2, 2, 'C4'),
+    mkcard( 3, 'diamonds', 2, 2, 'M4'),
+    mkcard( 4, 'diamonds', 2, 2, 'K4'),
+    mkcard( 5, 'diamonds', 2, 2, 'K5'),
+    mkcard( 6, 'diamonds', 2, 2, 'M5'),
+    mkcard( 7, 'diamonds', 2, 2, 'C5'),
+    mkcard( 8, 'diamonds', 2, 2, 'A4'),
+    mkcard( 9, 'diamonds', 2, 2, 'A5'),
+    mkcard(10, 'diamonds', 2, 2, 'K6'),
+    mkcard(11, 'diamonds', 2, 2, None, 'K6'),
+    mkcard(12, 'diamonds', 2, 2, None, 'M6'),
+    mkcard(13, 'diamonds', 2, 2, None, 'C6'),
+    mkcard( 1, 'diamonds', 2, 2, None, 'A6'),
+
+    # Chapter 3: Hearts
+    # Missions without hints: M9 K9 A9
+    mkcard( 2, 'hearts', 3, 3, 'M7'),
+    mkcard( 3, 'hearts', 3, 3, 'K7'),
+    mkcard( 4, 'hearts', 3, 3, 'C7'),
+    mkcard( 5, 'hearts', 3, 3, 'C8'),
+    mkcard( 6, 'hearts', 3, 3, 'K8'),
+    mkcard( 7, 'hearts', 3, 3, 'M8'),
+    mkcard( 8, 'hearts', 3, 3, 'A7'),
+    mkcard( 9, 'hearts', 3, 3, 'C9'),
+    mkcard(10, 'hearts', 3, 3, 'A8'),
+    mkcard(11, 'hearts', 3, 3, None, 'C9'),
+    mkcard(12, 'hearts', 3, 3, None, 'K9'),
+    mkcard(13, 'hearts', 3, 3, None, 'M9'),
+    mkcard( 1, 'hearts', 3, 3, None, 'A9'),
+
+    # Chapter 4: Spades
+    # Missions without hints: M12 A11
+    mkcard( 2, 'spades', 4, 4, 'K10'),
+    mkcard( 3, 'spades', 4, 4, 'C10'),
+    mkcard( 4, 'spades', 4, 4, 'M10'),
+    mkcard( 5, 'spades', 4, 4, 'M11'),
+    mkcard( 6, 'spades', 4, 4, 'C11'),
+    mkcard( 7, 'spades', 4, 4, 'K11'),
+    mkcard( 8, 'spades', 4, 4, 'A10'),
+    mkcard( 9, 'spades', 4, 4, 'C12'),
+    mkcard(10, 'spades', 4, 4, 'K12'),
+    mkcard(11, 'spades', 4, 4, None, 'M12'),
+    mkcard(12, 'spades', 4, 4, None, 'C12'),
+    mkcard(13, 'spades', 4, 4, None, 'K12'),
+    mkcard( 1, 'spades', 4, 4, None, 'A11'),
+  ]
 }

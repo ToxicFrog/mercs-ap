@@ -2,10 +2,6 @@
 
 ## TODO
 
-- Bugfixes:
-  - Non-idempotency of money
-    - can use Set and Get commands on the server for this to record what we have
-      and have not successfully delivered to the player
 - Checks:
   - Number of bounties
     - Option to set point beyond which there will be no progression items
@@ -26,10 +22,9 @@
     - Airstrike coupons
     - Resource refills
 - Hints:
-  - Hint what number cards are carrying when their location is revealed by a mission
-    - Need to send a CreateHints packet for the locations iff we haven't checked them yet
-  - Perhaps: capturing cards alive gives hints for where your progression items are
-    - I think this requires us to bake in the hints at generation time?
+  - Capturing a number card should hint a random useful (or filler if no useful) item
+  - Capturing a face card or ace should hint a random progression item
+  - This needs to be baked into slot_data at generation time
 - Other:
   - Use Ui_PrintHudMessage to display messages in game if possble
     - Possible hooks: DebugSkipToMission, Tooltip_Debug, ConTooltip_Debug, util_DebugStartMissionChainLoading

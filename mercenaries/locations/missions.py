@@ -45,6 +45,9 @@ class MissionLocation(NamedTuple):
       {'A': 'allies', 'K': 'sk', 'M': 'mafia', 'C': 'china'}[self.faction],
       self.rank)
 
+  def is_hintable(self, found):
+    return False
+
   def access_rule(self, world):
     prereqs = {
       MISSIONS[prereq].access_rule(world) for prereq in self.prereqs

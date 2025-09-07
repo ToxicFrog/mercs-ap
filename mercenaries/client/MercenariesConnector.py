@@ -56,6 +56,16 @@ class MercenariesConnector:
     #   print('found', found)
     return found
 
+  def get_hintable_checks(self, found: Set[int], missing: Set[int]):
+    found = {
+      location.short_name(): location
+      for location in [location_by_id(id) for id in found]
+    }
+    return {
+      id for id in missing
+      if location_by_id(id).is_hintable(found)
+    }
+
   #### Writers ####
   def send_items(self, items: List[int], last_sent: int):
     '''

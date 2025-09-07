@@ -47,6 +47,11 @@ class BountyLocation(NamedTuple):
   def is_checked(self, game):
     return game.is_bounty_collected(self.type, self.count)
 
+  def is_hintable(self, found):
+    # TODO: maybe the unused mission hints should provide hints for progression
+    # items found in the bounty sequences?
+    return False
+
   def access_rule(self, world):
     # There aren't really any hard limits on when the player can go out and find
     # these, except that the NK ones aren't accessible in the first half of the

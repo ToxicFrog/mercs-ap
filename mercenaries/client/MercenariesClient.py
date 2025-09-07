@@ -102,6 +102,8 @@ class MercenariesContext(SuperContext):
         if not self.ap_state:
           self.debug('Still waiting for state from server.')
           continue
+
+        # Send new items
         connector.send_items(
           [item.item for item in self.items_received],
           self.ap_state.get('items_synced', 0))
@@ -109,10 +111,22 @@ class MercenariesContext(SuperContext):
           {'cmd': 'Set', 'key': 'items_synced', 'want_reply': True, 'default': 0,
            'operations': [{'operation': 'replace', 'value': len(self.items_received)}]}
           ])
+
+        # Report new checks
         self.locations_checked |= connector.get_new_checks(self.missing_locations)
         await self.check_locations(self.locations_checked)
+
+        # Hint any locations we got hint intel for.
+        hintables = connector.get_hintable_checks(self.checked_locations, self.missing_locations)
+        if hintables:
+          await self.send_msgs([
+            {'cmd': 'CreateHints', 'locations': hintables}
+          ])
+
+        # See if we've won!
         if connector.current_chapter() > self.slot_data['goal']:
           self.finished_game = True
+
       except IPCError:
         # self.debug('IPC error, sleeping')
         pass
