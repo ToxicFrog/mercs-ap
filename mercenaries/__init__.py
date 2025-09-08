@@ -189,6 +189,14 @@ class MercenariesWorld(World):
     self.multiworld.completion_condition[self.player] = goal
 
   def fill_slot_data(self):
+    # Search the multiworld for stuff we want to hint from card captures.
+    # We can do this with multiworld.get_items() and then check item.classification,
+    # item.player, and item.location.address
+    # Ideally we fish out useful progression (highest priority) and normal progression
+    # for the face cards/aces, and useful filler -> normal filler for the number cards,
+    # and avoid stuff with skip_balancing or deprioritized.
+    # Then we pick them at random without replacement for the hints, and record
+    # two lists of location IDs, one for faces and one for numbers.
     return self.options.as_dict(
       'goal',
       'vanilla_intel', 'vanilla_intel_target',

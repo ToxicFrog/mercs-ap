@@ -113,12 +113,9 @@ class MercenariesConnector:
     self.game.set_unlocked_shop_items(unlock_list, 1.0 - self.options['shop_discount_percent']/100)
 
   def converge_money_items(self):
-    # This is not idempotent, so we send the missing items once each and
-    # record them as send them.
-    # If the send fails, adjust_money will throw and we don't do the append.
-    # TODO: this ends up sending the money every time we connect, which is a
-    # problem. We need to use the AP Set/Get API to record which ones have been
-    # successfully sent.
+    # This is not idempotent, but the AP host remembers what the last one we
+    # confirmed sending is, and send_items only queues money items that we
+    # know we haven't sent yet.
     for item in self.queued_money_items:
       print(f'Sending money: {item.name()}')
       self.game.adjust_money(item.amount)

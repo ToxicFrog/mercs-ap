@@ -65,74 +65,6 @@ Totals
  13 money bonuses
 135 total items
 
-This is a perfect match if we don't turn on individual collectables or condense
-intel.
-If we do either, we need filler, possibly a lot of it.
-Possible fillers are:
-- money in various amounts
-- discounts for shop items (extra useful if we start the prices high!)
-- faction reputation bonuses
-- health/ammo/grenade refills
-- single-use airstrikes
-
-RA has achievements for "complete 3/6/9/12 missions for [faction]" which we can
-base this on. There appear to be data structures for "what is the index of the
-next mission for this faction".
-- clear mission primary objective [is check]
-  - money
-  - reputation
-  - MOM unlocks
-
-RA has achievements for at least some and possibly all of these.
-They're missable.
-- clear mission bonus objective [missable]
-  - money
-  - reputation
-  - MOM unlocks
-  - if not completed, you have to reload an earlier save and retry
-
-RA has leaderboards for these, which we can turn into checks for them.
-- clear challenge
-  - money
-
-RA has counter achievements for these, the code is incredibly gnarly but I can
-probably figure it out.
-If I can get it from lua that would probably be more readable, but also, there's
-like 250 of them, which is a pretty big constant table...
-- find collectable [is check]
-  - money per
-  - reputation per
-  - cheats at certain thresholds
-  - MOM unlocks at certain thresholds
-  - money at certain thresholds
-  - might make each collectable a specific check, or might be easier to just
-    count all collectables and unlock progressive checks
-
-All cards are tracked in memory, RA has the addresses as alt conditions for the
-"capture cards" achievements. These are spaced 0x28 bytes apart so it seems
-likely that what we have here are arrays of card_t.
-The status field for each card is a uint32_t and is 1 for "at large", 2 for "killed"
-and 3 for "captured". 3 is set as soon as you get the mission complete popup, it
-looks like; you only get the 2 next time you open the PDA.
-- verify number card [missable]
-  - money
-  - intel
-  - any that you haven't gotten before verifying the Ace will vanish when the
-    Ace mission is completed
-- verify face card
-  - money
-  - intel
-  - MOM unlocks
-  - always part of a mission
-- verify Ace
-  - money
-  - intel
-  - MOM unlocks
-  - always part of a mission
-  - this is a point of no return that vanishes all number cards of the same suit
-    and spawns the next suit
-
-
 Ideas for items in the pool:
 - MOM unlocks (are these in lua? need to unlock MOM ingame to check)
   - maybe have cheats as separate pool items
@@ -525,3 +457,5 @@ r5 = {
 }
 r6 = true
 util_PrintDebugMsg(...)
+
+

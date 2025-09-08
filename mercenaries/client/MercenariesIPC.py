@@ -133,10 +133,27 @@ class MercenariesIPC:
     # Now redirect Debug_Printf to alias util_PrintDebugMsg.
     Debug_Printf.set(PrintDebugMsg)
 
-    # Could do a similar hook of LoadNoMissionState
-    # Starting at instruction 28, the chapter and current AN, PRC, Mafia, and SK missions
-    # are in registers r0, r1, r2, r3, and r4
-    # and 28 through 57 are all debug output in five batches of six instructions each
+    # For a larger hook, we can use AttemptFactionMoodClamp.
+    # 25 constants, 77 free instructions, and most of what it does we can replace,
+    # if we're going to be managing faction mood floors from AP -- we need 6
+    # constants and 16 instructions to call Faction_SetMinimumRelation repeatedly,
+    # and then after that we've got loads of time to call ShouldGameStateApply,
+    # PrintHudMessage, AdjustMoney, etc
+
+    # 4 constants, 5 instructions
+    #   Faction_ModifyRelation(faction, 'prokat', amount)
+
+    # 3 constants, 4 instructions, not sure what other stuff it might do though
+    #   Player_AdjustMoney(delta, 'interface.economyevent.challenge')
+    # Have also seen money adjustment done with
+    #   Player_SetMoney(Player_GetMoney()+delta)
+    # which is 6 instructions but still only 3 constants and might be safer
+
+    # 2 constants, 3 instructions
+    #   Ui_PrintHudMessage(msg)
+
+    # Also need a few instructions at the end to clear the global "we did this" flag.
+
 
     self.L_ptr = L_ptr
     print('Code injection complete.')

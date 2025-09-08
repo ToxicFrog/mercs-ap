@@ -1,0 +1,22 @@
+
+  K   C   NOTES
+  1   2   Call ShouldGameStateApply() to extract mission information
+          ; if I can get tCurrentMissions to exist reliably, we can skip this
+  1   2   Call AttemptAceMissionUnlock() to check intel levels
+  9  16   Apply faction rep floors
+  3   6   Adjust player money (can be done over PINE if needed)
+  2   3   Display HUD message
+  2   2   Cleanup
+ 18  31   TOTAL NEEDED
+
+  K   C   NOTES
+  2   6   util_PrintDebugMsg
+ 16  77   AttemptFactionMoodClamp
+ 18  83   TOTAL AVAILABLE IN FUNCTIONS
+ 37 167   util_DebugStartMissionChainLoading -- need to verify this is actually safe to hollow out
+ 31 114   DebugSkipToMission -- as above
+  2  11   ConTooltip_Debug
+
+  K   C   NOTES
+ -1  -2   Interfunction call overhead (1/2 per function after the first)
+ 17  81   TOTAL AFTER OVERHEAD
