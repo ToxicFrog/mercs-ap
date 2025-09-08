@@ -297,16 +297,15 @@ class Lua_GCTable(Lua_GCObject):
     for node in self.hash:
       if node.keyEq(key) and node.v.valid():
         return node
-    return None
+    raise KeyError(f'No key {key} in {self}')
 
   def getfield(self, key) -> Lua_TObject:
     '''
     Returns a TObject for the given table entry. key can be an int or a string.
     '''
-    if type(key) == int and key < self.array_size:
+    if type(key) == int:
       return self.array[key]
-    node = self.getnode(key)
-    return node.v if node else None
+    return self.getnode(key).v
 
   def hasMetatable(self, seen):
     return (

@@ -85,14 +85,13 @@ class MercenariesIPC:
     # Grab all the things we want to modify *first*, so that if any of them are
     # nil we know the VM isn't done starting up yet and can retry later.
     # TODO: maybe getglobal and getnode should raise KeyError?
-    GetIntelTotal = L.getglobal('gameflow_GetIntelTotal')
-    ShouldGameStateApply = L.getglobal('gameflow_ShouldGameStateApply')
-    PrintDebugMsg = L.getglobal('util_PrintDebugMsg')
-    Debug_Printf = L.getglobal('Debug_Printf')
-    AttemptAceMissionUnlockNode = L._G.val().getnode('gameflow_AttemptAceMissionUnlock')
-
-    if not (GetIntelTotal and ShouldGameStateApply and PrintDebugMsg
-            and Debug_Printf and AttemptAceMissionUnlockNode):
+    try:
+      GetIntelTotal = L.getglobal('gameflow_GetIntelTotal')
+      ShouldGameStateApply = L.getglobal('gameflow_ShouldGameStateApply')
+      PrintDebugMsg = L.getglobal('util_PrintDebugMsg')
+      Debug_Printf = L.getglobal('Debug_Printf')
+      AttemptAceMissionUnlockNode = L._G.val().getnode('gameflow_AttemptAceMissionUnlock')
+    except KeyError:
       raise IPCError('lua_State is still initializing')
 
     # Hook GetIntelTotal to return a value of our choice.
@@ -200,12 +199,13 @@ class MercenariesIPC:
     return self.deck.is_verified(suit, rank)
 
   def refresh_mission_list(self):
-    if not self.missions:
-      L = GCObject(self.pine, self.L_ptr)
-      self.missions = L.getglobal('mission_accepted')
     if self.missions:
       return self.missions.val()
-    else:
+    try:
+      L = GCObject(self.pine, self.L_ptr)
+      self.missions = L.getglobal('mission_accepted')
+      return self.missions
+    except KeyError:
       return None
 
   def is_mission_complete(self, faction: str, mission) -> bool:
