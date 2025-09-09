@@ -11,12 +11,14 @@
 
   K   C   NOTES
   2   6   util_PrintDebugMsg
- 16  77   AttemptFactionMoodClamp
- 18  83   TOTAL AVAILABLE IN FUNCTIONS
- 37 167   util_DebugStartMissionChainLoading -- need to verify this is actually safe to hollow out
- 31 114   DebugSkipToMission -- as above
-  2  11   ConTooltip_Debug
+ 25  77   AttemptFactionMoodClamp
+ 27  83   TOTAL AVAILABLE IN FUNCTIONS
 
   K   C   NOTES
  -1  -2   Interfunction call overhead (1/2 per function after the first)
  17  81   TOTAL AFTER OVERHEAD
+
+; possible extras
+ 37 167   util_DebugStartMissionChainLoading -- need to verify this is actually safe to hollow out
+ 31 114   DebugSkipToMission -- as above
+  2  11   ConTooltip_Debug
