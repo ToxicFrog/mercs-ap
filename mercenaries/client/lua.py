@@ -105,7 +105,8 @@ class Lua_TObject:
       return False
     if tt >= 4:
       # Consistency check with enclosed GCObject
-      return self.val().valid(tt)
+      # return self.val().valid(tt)
+      return self.pine.peek8(self.pine.peek32(self.addr+4)+4) == tt
     return True
 
   def tt(self):
@@ -388,7 +389,7 @@ class Lua_GCFunction(Lua_GCObject):
     '''
     self.edits = []
     try:
-      yield None
+      yield self
     finally:
       # lock function by making first instruction jump-to-self
       self.op0 = self.proto.code[0]()
@@ -508,6 +509,9 @@ class Lua_GCThread(Lua_GCObject):
 
   def __str__(self):
     return 'thread$%08X' % self.addr
+
+  def getglobalnode(self, key):
+    return self._G.val().getnode(key)
 
   def getglobal(self, key) -> Lua_TObject:
     '''
