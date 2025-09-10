@@ -37,6 +37,7 @@ class MercenariesContext(SuperContext):
     super().reset_server_state()
     self.connector = None
     self.ap_state = {}
+    self.hintables = set()
 
   def make_gui(self):
     ui = super().make_gui()
@@ -107,10 +108,11 @@ class MercenariesContext(SuperContext):
         connector.send_items(
           [item.item for item in self.items_received],
           self.ap_state.get('items_synced', 0))
-        await self.send_msgs([
-          {'cmd': 'Set', 'key': 'items_synced', 'want_reply': True, 'default': 0,
-           'operations': [{'operation': 'replace', 'value': len(self.items_received)}]}
-          ])
+        if len(self.items_received) != self.ap_state.get('items_synced', 0):
+          await self.send_msgs([
+            {'cmd': 'Set', 'key': 'items_synced', 'want_reply': True, 'default': 0,
+            'operations': [{'operation': 'replace', 'value': len(self.items_received)}]}
+            ])
 
         # Report new checks
         self.locations_checked |= connector.get_new_checks(self.missing_locations)
@@ -118,7 +120,8 @@ class MercenariesContext(SuperContext):
 
         # Hint any locations we got hint intel for.
         hintables = connector.get_hintable_checks(self.checked_locations, self.missing_locations)
-        if hintables:
+        if hintables != self.hintables:
+          self.hintables = hintables
           await self.send_msgs([
             {'cmd': 'CreateHints', 'locations': hintables}
           ])
