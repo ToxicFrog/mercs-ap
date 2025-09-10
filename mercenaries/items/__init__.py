@@ -1,23 +1,11 @@
-"""
+'''
 Item catalogue for Mercenaries.
 
-Currently, there are 99 checks (52 cards + 47 missions), some of them missable.
-
-For items, we implement only the Merchant of Menace unlocks (63 items); we fill
-the rest with cash bonuses drawn from a similar distribution to the threshold
-bonuses:
-  1×  $50,000
-  2× $100,000
-  2× $250,000
-  1× $500,000
-
-In the future, the goal is to also add:
-  - 48 intel awards (or a smaller, configurable number that is hard required to unlock the ace)
-  - 11 skins
-  - airstrike freebies
-  - shop discounts
-  - reputation bonuses
-"""
+At present this means:
+- intel (suited and progressive versions of vanilla and generic intel)
+- money ($50k, $100k, $250k, and $500k, based on the bounty rewards)
+- shop unlocks (can be duplicated, duplicates act as discounts)
+'''
 
 from itertools import chain
 from typing import NamedTuple

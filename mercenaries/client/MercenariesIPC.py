@@ -25,11 +25,12 @@ Useful but not yet usable addresses --
 
 from typing import List
 
-from .pine import Pine
-from .shop import MafiaShop
+from .deck import DeckOf52
 from .lua import GCObject, Lua_TObject, LUA_TNUMBER, LUA_TSTRING
 from .lopcode import LuaOpcode
-from .deck import DeckOf52
+from .patch import patch
+from .pine import Pine
+from .shop import MafiaShop
 from .stats import PDAStats
 
 class IPCError(RuntimeError):
@@ -86,74 +87,23 @@ class MercenariesIPC:
     # nil we know the VM isn't done starting up yet and can retry later.
     # TODO: maybe getglobal and getnode should raise KeyError?
     try:
-      GetIntelTotal = L.getglobal('gameflow_GetIntelTotal')
-      ShouldGameStateApply = L.getglobal('gameflow_ShouldGameStateApply')
-      PrintDebugMsg = L.getglobal('util_PrintDebugMsg')
-      Debug_Printf = L.getglobal('Debug_Printf')
-      AttemptAceMissionUnlockNode = L._G.val().getnode('gameflow_AttemptAceMissionUnlock')
+      globals = {
+        'gameflow_GetIntelTotal': L.getglobal('gameflow_GetIntelTotal'),
+        'gameflow_ShouldGameStateApply': L.getglobal('gameflow_ShouldGameStateApply'),
+        'util_PrintDebugMsg': L.getglobal('util_PrintDebugMsg'),
+        'Debug_Printf': L.getglobal('Debug_Printf'),
+        'gameflow_AttemptAceMissionUnlock': L.getglobal('gameflow_AttemptAceMissionUnlock'),
+        'AttemptFactionMoodClamp': L.getglobal('AttemptFactionMoodClamp'),
+        # Stuff that we need to reference by name
+        'bDebugOutput_name': L.getglobalnode('bDebugOutput').k,
+        'gameflow_ShouldGameStateApply_name': L.getglobalnode('gameflow_ShouldGameStateApply').k,
+        'gameflow_GetIntelTotal_name': L.getglobalnode('gameflow_GetIntelTotal').k,
+        'gameflow_AttemptAceMissionUnlock_name': L.getglobalnode('gameflow_AttemptAceMissionUnlock').k,
+      }
     except KeyError:
       raise IPCError('lua_State is still initializing')
 
-    # Hook GetIntelTotal to return a value of our choice.
-    # Grab a handle to constant 0 so we can adjust it at our leisure.
-    self.intel_total = GetIntelTotal.val().getk(0)
-    self.intel_total.set(0.0)
-
-    # Replace the function body with an immediate return.
-    # code[0] is already LOADK r1, 0 -- i.e. exactly what we want -- so we just
-    # replace code[1] with a return.
-    with GetIntelTotal.val().lock():
-      GetIntelTotal.val().patch(1, [LuaOpcode('RETURN', A=1, B=2)])
-
-    # Modify gameflow_ShouldGameStateApply to exfiltrate information about
-    # mission completion state (and exit early if called without arguments).
-    with ShouldGameStateApply.val().lock():
-      ShouldGameStateApply.val().patch(24, [
-        LuaOpcode('SETGLOBAL', A=5, Bx=1), # set _G.mission_accepted to r5, which is the info table
-        LuaOpcode('TEST', A=0, B=0, C=0), # test if r0 is nil, and if so
-        LuaOpcode('JMP', sBx=50), # jump to the end of the function
-      ])
-
-    # Hook the debug output function to call stuff we designate instead.
-    with PrintDebugMsg.val().lock():
-      # Replace its constant table with the names of the functions we want to call
-      PrintDebugMsg.val().setk(0, L._G.val().getnode('gameflow_ShouldGameStateApply').k)
-      PrintDebugMsg.val().setk(1, AttemptAceMissionUnlockNode.k)
-
-      # Replace the function body with calls to those functions.
-      PrintDebugMsg.val().patch(0, [
-        LuaOpcode('GETGLOBAL', A=0, Bx=0),
-        LuaOpcode('CALL', A=0, B=1, C=1),
-        LuaOpcode('GETGLOBAL', A=0, Bx=1),
-        LuaOpcode('CALL', A=0, B=1, C=1),
-        LuaOpcode('RETURN', A=0, B=1),
-      ])
-
-    # Now redirect Debug_Printf to alias util_PrintDebugMsg.
-    Debug_Printf.set(PrintDebugMsg)
-
-    # For a larger hook, we can use AttemptFactionMoodClamp.
-    # 25 constants, 77 free instructions, and most of what it does we can replace,
-    # if we're going to be managing faction mood floors from AP -- we need 6
-    # constants and 16 instructions to call Faction_SetMinimumRelation repeatedly,
-    # and then after that we've got loads of time to call ShouldGameStateApply,
-    # PrintHudMessage, AdjustMoney, etc
-
-    # 4 constants, 5 instructions
-    #   Faction_ModifyRelation(faction, 'prokat', amount)
-
-    # 3 constants, 4 instructions, not sure what other stuff it might do though
-    #   Player_AdjustMoney(delta, 'interface.economyevent.challenge')
-    # Have also seen money adjustment done with
-    #   Player_SetMoney(Player_GetMoney()+delta)
-    # which is 6 instructions but still only 3 constants and might be safer
-
-    # 2 constants, 3 instructions
-    #   Ui_PrintHudMessage(msg)
-
-    # Also need a few instructions at the end to clear the global "we did this" flag.
-
-
+    self.intel_total = patch(globals)
     self.L_ptr = L_ptr
     print('Code injection complete.')
 
@@ -204,7 +154,7 @@ class MercenariesIPC:
     try:
       L = GCObject(self.pine, self.L_ptr)
       self.missions = L.getglobal('mission_accepted')
-      return self.missions
+      return self.missions.val()
     except KeyError:
       return None
 
