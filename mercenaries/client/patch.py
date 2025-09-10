@@ -6,14 +6,16 @@ from .lopcode import LuaOpcode
 from .lua import LUA_TNUMBER, LUA_TSTRING
 
 def patch(globals):
-  print(globals)
   patch_intel(globals)
   # TODO: Not needed since tCurrentMissions is available in most contexts?
   patch_sgsa(globals)
   patch_afmc(globals)
   redirect_debug_prints(globals)
 
-  return globals['gameflow_GetIntelTotal'].val().getk(0)
+  return (
+    globals['gameflow_GetIntelTotal'].val().getk(0),
+    globals['AttemptFactionMoodClamp'].val().getk(9),
+  )
 
 def redirect_debug_prints(globals):
   globals['Debug_Printf'].set(globals['AttemptFactionMoodClamp'])
@@ -69,8 +71,8 @@ def patch_afmc(globals):
   +   CONST$00C4D840 k0  'gameflow_ShouldGameStateApply' ; called
   +   CONST$00C4D848 k1  'gameflow_AttemptAceMissionUnlock' ; called
   +   CONST$00C4D850 k2  'bDebugOutput'  ; used as the idempotency flag global
-      CONST$00C4D858 k3  'Utility_ReadNumberFromScribbleMemory' [h=2BB92038,$00A00C80]
-      CONST$00C4D860 k4  'FirstMissionSequenceComplete' [h=48B087A6,$00A0D8C0]
+  +   CONST$00C4D858 k3  'Player_SetMoney'  ; called
+  +   CONST$00C4D860 k4  'Player_GetMoney'  ; called
   +   CONST$00C4D868 k5  -100.0 allies mood floor
   +   CONST$00C4D870 k6  -100.0 china mood floor
   +   CONST$00C4D878 k7  -100.0 mafia mood floor
@@ -112,46 +114,61 @@ def patch_afmc(globals):
   sgsa_name = globals['gameflow_ShouldGameStateApply_name']
   aamu_name = globals['gameflow_AttemptAceMissionUnlock_name']
   flag_name = globals['bDebugOutput_name']
+  setmoney_name = globals['Player_SetMoney_name']
+  getmoney_name = globals['Player_GetMoney_name']
 
   with globals['AttemptFactionMoodClamp'].val().lock() as f:
     f.setk(0, sgsa_name, tt=LUA_TSTRING) # To be called
     f.setk(1, aamu_name, tt=LUA_TSTRING) # To be called
     f.setk(2, flag_name, tt=LUA_TSTRING) # Idempotency flag
+    f.setk(3, setmoney_name, tt=LUA_TSTRING) # To be called
+    f.setk(4, getmoney_name, tt=LUA_TSTRING) # To be called
     f.setk(5, -100.0, tt=LUA_TNUMBER) # Mood floors to apply
     f.setk(6, -100.0, tt=LUA_TNUMBER) # allies/china/mafia/SK
     f.setk(7, -100.0, tt=LUA_TNUMBER)
     f.setk(8, -100.0, tt=LUA_TNUMBER)
+    f.setk(9, 0.0, tt=LUA_TNUMBER) # Money bonus
     f.patch(0, [
-      # 00 gameflow_ShouldGameStateApply()
-      LuaOpcode('LOADK', A=0, Bx=0),
+      # 00 <k0> gameflow_ShouldGameStateApply()
+      LuaOpcode('GETGLOBAL', A=0, Bx=0),
       LuaOpcode('CALL', A=0, B=1, C=1),
-      # 02 gameflow_AttemptAceMissionUnlock()
-      LuaOpcode('LOADK', A=0, Bx=1),
+      # 02 <k1> gameflow_AttemptAceMissionUnlock()
+      LuaOpcode('GETGLOBAL', A=0, Bx=1),
       LuaOpcode('CALL', A=0, B=1, C=1),
-      # 04 Faction_SetMinimumRelation(<k15> 'allies', <k5> allies floor)
-      LuaOpcode('LOADK', A=0, Bx=14),
+      # 04 <k14> Faction_SetMinimumRelation(<k15> 'allies', <k5> allies floor)
+      LuaOpcode('GETGLOBAL', A=0, Bx=14),
       LuaOpcode('LOADK', A=1, Bx=15),
       LuaOpcode('LOADK', A=2, Bx=5),
       LuaOpcode('CALL', A=0, B=3, C=1),
-      # 08 Faction_SetMinimumRelation(<k18> 'china', <k6> china floor)
-      LuaOpcode('LOADK', A=0, Bx=14),
+      # 08 <k14> Faction_SetMinimumRelation(<k18> 'china', <k6> china floor)
+      LuaOpcode('GETGLOBAL', A=0, Bx=14),
       LuaOpcode('LOADK', A=1, Bx=18),
       LuaOpcode('LOADK', A=2, Bx=6),
       LuaOpcode('CALL', A=0, B=3, C=1),
-      # 12 Faction_SetMinimumRelation(<k19> 'mafia', <k7> mafia floor)
-      LuaOpcode('LOADK', A=0, Bx=14),
+      # 12 <k14> Faction_SetMinimumRelation(<k19> 'mafia', <k7> mafia floor)
+      LuaOpcode('GETGLOBAL', A=0, Bx=14),
       LuaOpcode('LOADK', A=1, Bx=19),
       LuaOpcode('LOADK', A=2, Bx=7),
       LuaOpcode('CALL', A=0, B=3, C=1),
-      # 16 Faction_SetMinimumRelation(<k20> 'sk', <k8> sk floor)
-      LuaOpcode('LOADK', A=0, Bx=14),
+      # 16 <k14> Faction_SetMinimumRelation(<k20> 'sk', <k8> sk floor)
+      LuaOpcode('GETGLOBAL', A=0, Bx=14),
       LuaOpcode('LOADK', A=1, Bx=20),
       LuaOpcode('LOADK', A=2, Bx=8),
       LuaOpcode('CALL', A=0, B=3, C=1),
-      # End for now, more work to follow
+      # 20 if not <k2> bDebugOutput then return end
+      LuaOpcode('GETGLOBAL', A=0, Bx=2),
+      LuaOpcode('TEST', C=0, B=0, A=0), # FIXME this doesn't seem to be working right
+      LuaOpcode('JMP', sBx=(77-23)), # 22, so PC is 23, and end of fn is 77
+      # 23 <k3> Player_SetMoney(<k4> Player_GetMoney() + <k9> money bonus)
+      LuaOpcode('GETGLOBAL', A=1, Bx=3), # ... setmoney
+      LuaOpcode('GETGLOBAL', A=2, Bx=4), # ... setmoney getmoney
+      LuaOpcode('CALL', A=2, B=1, C=2),  # ... setmoney $player
+      LuaOpcode('LOADK', A=3, Bx=9),     # ... setmoney $player $bonus
+      LuaOpcode('ADD', A=2, B=2, C=3),   # ... setmoney $total
+      LuaOpcode('CALL', A=1, B=2, C=1),
+      # 29 <k2> bDebugOutput = not bDebugOutput
+      LuaOpcode('NOT', A=0, B=0),
+      LuaOpcode('SETGLOBAL', A=0, Bx=2),
+      # eof
       LuaOpcode('RETURN', B=1),
-      # # 20 if not <k2> bDebugOutput then return end
-      # LuaOpcode('GETGLOBAL', A=0, Bx=2),
-      # LuaOpcode('TEST', C=0, B=0, A=0),
-      # LuaOpcode('JMP', sBx=(77-23)), # 22, so PC is 23, and end of fn is 77
     ])

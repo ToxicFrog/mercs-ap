@@ -99,11 +99,16 @@ class MercenariesIPC:
         'gameflow_ShouldGameStateApply_name': L.getglobalnode('gameflow_ShouldGameStateApply').k,
         'gameflow_GetIntelTotal_name': L.getglobalnode('gameflow_GetIntelTotal').k,
         'gameflow_AttemptAceMissionUnlock_name': L.getglobalnode('gameflow_AttemptAceMissionUnlock').k,
+        'Player_GetMoney_name': L.getglobalnode('Player_GetMoney').k,
+        'Player_SetMoney_name': L.getglobalnode('Player_SetMoney').k,
+        # Stuff we need to wiggle later
+        'bDebugOutput': L.getglobal('bDebugOutput'),
       }
     except KeyError:
       raise IPCError('lua_State is still initializing')
 
-    self.intel_total = patch(globals)
+    (self.intel_total, self.money_bonus) = patch(globals)
+    self.debug_flag = globals['bDebugOutput']
     self.L_ptr = L_ptr
     print('Code injection complete.')
 
