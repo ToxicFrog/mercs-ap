@@ -25,6 +25,7 @@ class MercenariesContext(SuperContext):
   want_slot_data = True
   tags = {'AP'}
   ap_state = {}
+  hintables = set()
 
   def __init__(self, server_address: str, slot_name: str, password: str, pine_path: str):
     super().__init__(server_address, password)
@@ -145,9 +146,9 @@ class MercenariesContext(SuperContext):
           self.finished_game = True
 
       except IPCError:
-        # self.debug('IPC error, sleeping')
-        pass
+        self.debug('IPC error, sleeping')
+        await asyncio.sleep(4)
       finally:
-        await asyncio.sleep(5)
+        await asyncio.sleep(1)
     self.debug('Game sync exiting.')
 

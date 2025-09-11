@@ -44,14 +44,14 @@ class MercenariesConnector:
 
   def get_new_checks(self, missing: Set[int]):
     # TODO: this is where missable handling needs to go once it's implemented.
-    # print('missing', missing)
-    found = {
-      id for id in missing
-      if self.game.is_checked(location_by_id(id))
-    }
-    # if found:
-    #   print('found', found)
-    return found
+    with self.game.start_location_checks() as ipc:
+      found = {
+        id for id in missing
+        if ipc.is_checked(location_by_id(id))
+      }
+      # if found:
+      #   print('found', found)
+      return found
 
   def get_hintable_checks(self, found: Set[int], missing: Set[int]):
     found = {

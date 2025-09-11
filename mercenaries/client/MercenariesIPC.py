@@ -23,6 +23,7 @@ Useful but not yet usable addresses --
 1941060 - money counter in the tutorial
 '''
 
+from contextlib import contextmanager
 from typing import List
 
 from .deck import DeckOf52
@@ -146,42 +147,61 @@ class MercenariesIPC:
       return 1
 
   #### For checking locations ####
-  def is_checked(self, location):
+  @contextmanager
+  def start_location_checks(self):
+    '''
+    Context manager for location checks.
+
+    Checking a location requires talking to the game, and checking all the
+    locations requires talking to the game a lot, which is very expensive. So
+    we do the talking at the start of the location check block and cache the
+    results.
+    '''
     self.validate()
+    self.doing_location_checks = True
+    try:
+      L = GCObject(self.pine, self.L_ptr)
+      missions = L.getglobal('mission_accepted').val()
+      self.mission_cache = {
+        faction: missions.getfield(faction).val
+        for faction in ['allies', 'china', 'mafia', 'sk']
+        if self.missions is not None
+      }
+    except KeyError:
+      self.mission_cache = {}
+    self.bounty_cache = self.stats.bounties_found()
+
+    try:
+      yield self
+    finally:
+      self.end_location_checks()
+
+  def end_location_checks(self):
+    self.doing_location_checks = False
+    self.bounty_cache = None
+    self.mission_cache = None
+
+  def is_checked(self, location):
+    assert self.doing_location_checks
     return location.is_checked(self)
 
   def is_card_verified(self, suit, rank):
     return self.deck.is_verified(suit, rank)
 
-  def refresh_mission_list(self):
-    if self.missions:
-      return self.missions.val()
-    try:
-      L = GCObject(self.pine, self.L_ptr)
-      self.missions = L.getglobal('mission_accepted')
-      return self.missions.val()
-    except KeyError:
-      return None
-
   def is_mission_complete(self, faction: str, mission) -> bool:
-    self.validate()
-    missions = self.refresh_mission_list()
-    if not missions:
-      return False
-    try:
-      return mission < missions.getfield(faction).val()
-    except KeyError:
-      print('mission table access error')
-      missions.dump({}, 'M ')
-      return False
+    return mission < self.mission_cache.get('faction', 0)
 
   def is_bounty_collected(self, type: str, count: int) -> bool:
-    return self.stats.bounties_found()[type] >= count
+    return self.bounty_cache[type] >= count
 
   #### For sending things to the game ####
   def adjust_money(self, delta: int):
     '''
     Add (or subtract) the given amount of money from the player's account.
+  def end_location_checks(self):
+    self.doing_location_checks = False
+    self.bounty_cache = None
+    self.mission_cache = None
 
     This is done via code injected into AttemptFactionMoodClamp, which will test
     the debug flag and, if set, deliver the money once only and unset it.
