@@ -19,6 +19,7 @@ Money: one-and-done, send it and record it as sent
 Intel: sum up the total amount of intel we have
 '''
 
+from collections import Counter
 from typing import Any, Dict, List, Set
 
 from CommonClient import logger
@@ -31,10 +32,6 @@ class MercenariesConnector:
   client: Any # MercenariesClient, but circular dependency
   ipc: MercenariesIPC
   options: Dict[str, Any]
-
-  queued_shop_items: List[Any] = []
-  queued_intel_items: List[Any] = []
-  queued_money_items: List[Any] = []
 
   def __init__(self, client, game, options):
     self.client = client
@@ -67,42 +64,36 @@ class MercenariesConnector:
     }
 
   #### Writers ####
-  def send_items(self, items: List[int], last_sent: int):
+  def send_items(self, items: List[int]) -> Set[int]:
     '''
     Send the specified items to the game. This is the complete list of items the
-    client knows we have received, which may include stuff we've already sent.
+    client knows we have received, minus any items we told it not to re-send (by
+    returning them in sent_items). The do-not-send list is remembered across
+    runs by the host.
+
+    We have, broadly speaking, two kinds of items we care about: idempotent
+    items, which can be re-sent without ill effects, and non-idempotent items,
+    which must only be sent once. The latter are added to sent_items and
+    returned to tell the client layer not to re-send them.
     '''
     items = [item_by_id(id) for id in items]
-    self.queued_shop_items = [item for item in items if 'shop' in item.groups()]
-    self.queued_intel_items = [item for item in items if 'intel' in item.groups()]
-    # We only take items after last_sent because the ones before that we have recorded
-    # on the server as having been sent already, and unlike shop and intel items,
-    # money is not idempotent.
-    self.queued_money_items = [item for item in items[last_sent:] if 'money' in item.groups()]
-    self.converge()
-
-  # Converge the game state with the rando state by sending any missing items.
-  # Items are always sent from the host in the order they were discovered, so
-  # any items at the end of queued_foo_items that are not in sent_foo_items are
-  # the missing ones.
-  def converge(self):
+    sent_items = Counter()
     try:
-      self.converge_shop_items()
-      self.converge_intel_items()
-      self.converge_money_items()
+      self.converge_shop_items([item for item in items if 'shop' in item.groups()])
+      self.converge_intel_items([item for item in items if 'intel' in item.groups()])
+      sent_items += self.converge_money_items([item for item in items if 'money' in item.groups()])
     except IPCError as e:
       logger.info(f'Error sending items to game, will retry later: {e}')
 
-  def converge_shop_items(self):
-    # We send this every time and trust the IPC library to not duplicate send
-    # if unneeded.
+    return sent_items
+
+  def converge_shop_items(self, items):
     # This is idempotent, so we just send the whole set of unlocks each time.
     # We do this even if the set of unlocks hasn't changed, because the player
     # may have unlocked new items in-game and we need to override that!
-    print(f'Unlocking items: {[item.name() for item in self.queued_shop_items]}')
     unlock_list = []
     by_tag = {}
-    for item in self.queued_shop_items:
+    for item in items:
       if item.tag in by_tag:
         by_tag[item.tag][1] += 1
       else:
@@ -112,21 +103,24 @@ class MercenariesConnector:
 
     self.game.set_unlocked_shop_items(unlock_list, 1.0 - self.options['shop_discount_percent']/100)
 
-  def converge_money_items(self):
-    # This is not idempotent, but the AP host remembers what the last one we
-    # confirmed sending is, and send_items only queues money items that we
-    # know we haven't sent yet.
-    for item in self.queued_money_items:
-      print(f'Sending money: {item.name()}')
-      self.game.adjust_money(item.amount)
+  def converge_money_items(self, items):
+    total = sum([item.amount for item in items])
+    if self.game.adjust_money(total):
+      print(f'Successfully sent ${total:,d} to the player.')
+      # If this succeeds, the money was successfully injected into the game and
+      # will be added to the player shortly. If it fails, something was already
+      # queued up and we need to retry later.
+      return Counter(item.id for item in items)
+    else:
+      return Counter()
 
-  def converge_intel_items(self):
+  def converge_intel_items(self, items):
     # This is fully idempotent and is a single call to setk() in practice so we
     # just do it unconditionally each time.
     chapter = self.game.current_chapter()
     suit = ['clubs', 'diamonds', 'hearts', 'spades'][chapter-1]
     total_intel = sum(
-      item.intel_amount() for item in self.queued_intel_items
+      item.intel_amount() for item in items
       if item.suit is None or item.suit == suit)
 
     # If progressive intel is on, excess intel "rolls over" from earlier

@@ -1,4 +1,5 @@
 import asyncio
+from collections import Counter
 import os
 
 from CommonClient import logger
@@ -83,6 +84,7 @@ class MercenariesContext(SuperContext):
         asyncio.create_task(self.sync_with_game(connector))
       case 'SetReply':
         if 'key' in args and 'value' in args:
+          print(f'Got new ap_state {args['key']} = {args['value']}')
           self.ap_state[args['key']] = args['value']
 
   async def send_msgs(self, msgs):
@@ -91,27 +93,39 @@ class MercenariesContext(SuperContext):
         self.debug('SEND: %s', msg)
     await super().send_msgs(msgs)
 
+  def strip_sent_items(self, items, sent):
+    sent = sent.copy()
+    for item in items:
+      if sent[item.item] > 0:
+        sent[item.item] -= 1
+      else:
+        yield item.item
+
   async def sync_with_game(self, connector):
     self.debug('Game sync running.')
+    # sent_items is a map from item ID to number of copies of that item sent to
+    # the game.
     await self.send_msgs([
-      {'cmd': 'Set', 'key': 'items_synced', 'want_reply': True, 'default': 0,
-        'operations': [{'operation': 'default', 'value': 0}]}
+      {'cmd': 'Set', 'key': 'sent_items', 'want_reply': True, 'default': {},
+        'operations': [{'operation': 'default', 'value': {}}]}
       ])
     while self.server:
       try:
         # self.debug('Starting sync iteration')
-        if not self.ap_state:
+        if 'sent_items' not in self.ap_state:
           self.debug('Still waiting for state from server.')
           continue
 
         # Send new items
-        connector.send_items(
-          [item.item for item in self.items_received],
-          self.ap_state.get('items_synced', 0))
-        if len(self.items_received) != self.ap_state.get('items_synced', 0):
+        old_sent_items = Counter({int(k): v for k,v in self.ap_state['sent_items'].items()})
+        new_sent_items = connector.send_items(self.strip_sent_items(
+          self.items_received, old_sent_items))
+
+        if old_sent_items + new_sent_items != old_sent_items:
+          print(f'Updating sent_items as {old_sent_items + new_sent_items}')
           await self.send_msgs([
-            {'cmd': 'Set', 'key': 'items_synced', 'want_reply': True, 'default': 0,
-            'operations': [{'operation': 'replace', 'value': len(self.items_received)}]}
+            {'cmd': 'Set', 'key': 'sent_items', 'want_reply': True, 'default': {},
+            'operations': [{'operation': 'replace', 'value': old_sent_items + new_sent_items}]}
             ])
 
         # Report new checks

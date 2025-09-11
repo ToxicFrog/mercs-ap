@@ -183,18 +183,17 @@ class MercenariesIPC:
     '''
     Add (or subtract) the given amount of money from the player's account.
 
-    Due to difficulty in finding reliable pointers to the player structure,
-    this will only send if the player is on foot.
+    This is done via code injected into AttemptFactionMoodClamp, which will test
+    the debug flag and, if set, deliver the money once only and unset it.
     '''
     self.validate()
-    # See NOTES for the ongoing quest to find a stable player/money pointer. :<
-    on_foot = self.pine.peek32(0x00558B10) > 0
-    if not on_foot:
-      raise IPCError('Player is not on foot.')
-    player_ptr = self.pine.peek32(0x00558B4C)
-    money_ptr = player_ptr + 0xB60
-    self.pine.pokef32(money_ptr, self.pine.peekf32(money_ptr) + delta)
-    pass
+
+    if self.debug_flag.val():
+      return False
+
+    self.money_bonus.set(delta)
+    self.debug_flag.set(True)
+    return True
 
   def set_unlocked_shop_items(self, items: List[List[int]], discount_factor: float):
     '''
