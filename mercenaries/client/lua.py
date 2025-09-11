@@ -220,13 +220,18 @@ class Lua_GCString(Lua_GCObject):
     super().__init__(pine, addr)
     self.hash = pine.peek32(addr+8)
     self.size = pine.peek32(addr+12)
+    self.max_size = self.size
     self.data = pine.readmem(addr+16, self.size)
 
   def __str__(self):
     return '%s [h=%08X,$%08X]' % (repr(self.data.decode(errors='replace')), self.hash, self.addr)
 
-  def setData(self, data):
-    self.pine.writemem(self.addr+16, data)
+  def set_string(self, buf: str):
+    buf = buf.encode() + b'\0'
+    assert len(buf) <= self.max_size, f'Cannot exceed size of existing string table entry overwriting {self}'
+    self.size = len(buf)
+    self.pine.poke32(self.addr+12, self.size)
+    self.pine.writemem(self.addr+16, buf)
 
   def dump(*args):
     return

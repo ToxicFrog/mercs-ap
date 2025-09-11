@@ -102,13 +102,14 @@ class MercenariesIPC:
         'gameflow_AttemptAceMissionUnlock_name': L.getglobalnode('gameflow_AttemptAceMissionUnlock').k,
         'Player_GetMoney_name': L.getglobalnode('Player_GetMoney').k,
         'Player_SetMoney_name': L.getglobalnode('Player_SetMoney').k,
+        'Ui_PrintHudMessage_name': L.getglobalnode('Ui_PrintHudMessage').k,
         # Stuff we need to wiggle later
         'bDebugOutput': L.getglobal('bDebugOutput'),
       }
     except KeyError:
       raise IPCError('lua_State is still initializing')
 
-    (self.intel_total, self.money_bonus) = patch(globals)
+    (self.intel_total, self.money_bonus, self.message_buffer, self.message_flag) = patch(globals)
     self.debug_flag = globals['bDebugOutput']
     self.L_ptr = L_ptr
     print('Code injection complete.')
@@ -194,24 +195,34 @@ class MercenariesIPC:
   def is_bounty_collected(self, type: str, count: int) -> bool:
     return self.bounty_cache[type] >= count
 
-  #### For sending things to the game ####
-  def adjust_money(self, delta: int):
+  def send_once(self, money: int = 0, message: str = ''):
     '''
-    Add (or subtract) the given amount of money from the player's account.
-  def end_location_checks(self):
-    self.doing_location_checks = False
-    self.bounty_cache = None
-    self.mission_cache = None
+    Send things that should only be delivered to the player once. At the moment
+    this means money and chat/info messages.
 
-    This is done via code injected into AttemptFactionMoodClamp, which will test
-    the debug flag and, if set, deliver the money once only and unset it.
+    Sent items are stored in the constant table of AttemptFactionMoodClamp. The
+    presence of such items is signaled by setting bDebugOutput to true. The next
+    time the function is called they are delivered and the flag reset to false.
+    This function is then responsible for loading the constant table with new
+    items and setting the flag again.
     '''
     self.validate()
+
+    if not money and not message:
+      return False
 
     if self.debug_flag.val():
       return False
 
-    self.money_bonus.set(delta)
+    self.money_bonus.set(money)
+    if message:
+      # In practical terms, just by how much text we can fit on screen, this is
+      # probably limited to about 50 cols.
+      self.message_buffer.val().set_string(message)
+      self.message_flag.set(True)
+    else:
+      self.message_flag.set(False)
+
     self.debug_flag.set(True)
     return True
 

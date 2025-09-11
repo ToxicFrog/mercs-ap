@@ -19,7 +19,7 @@ Money: one-and-done, send it and record it as sent
 Intel: sum up the total amount of intel we have
 '''
 
-from collections import Counter
+from collections import Counter, deque
 from typing import Any, Dict, List, Set
 
 from CommonClient import logger
@@ -30,13 +30,15 @@ from ..locations import location_by_id
 
 class MercenariesConnector:
   client: Any # MercenariesClient, but circular dependency
-  ipc: MercenariesIPC
+  game: MercenariesIPC
   options: Dict[str, Any]
+  messages: deque[str]
 
   def __init__(self, client, game, options):
     self.client = client
     self.game = game
     self.options = options
+    self.messages = deque()
 
   #### Readers ####
   def current_chapter(self):
@@ -81,11 +83,14 @@ class MercenariesConnector:
     try:
       self.converge_shop_items([item for item in items if 'shop' in item.groups()])
       self.converge_intel_items([item for item in items if 'intel' in item.groups()])
-      sent_items += self.converge_money_items([item for item in items if 'money' in item.groups()])
+      sent_items += self.send_once([item for item in items if 'money' in item.groups()])
     except IPCError as e:
       logger.info(f'Error sending items to game, will retry later: {e}')
 
     return sent_items
+
+  def queue_message(self, msg):
+    self.messages.append(msg)
 
   def converge_shop_items(self, items):
     # This is idempotent, so we just send the whole set of unlocks each time.
@@ -102,17 +107,6 @@ class MercenariesConnector:
         by_tag[item.tag] = unlock
 
     self.game.set_unlocked_shop_items(unlock_list, 1.0 - self.options['shop_discount_percent']/100)
-
-  def converge_money_items(self, items):
-    total = sum([item.amount for item in items])
-    if self.game.adjust_money(total):
-      print(f'Successfully sent ${total:,d} to the player.')
-      # If this succeeds, the money was successfully injected into the game and
-      # will be added to the player shortly. If it fails, something was already
-      # queued up and we need to retry later.
-      return Counter(item.id for item in items)
-    else:
-      return Counter()
 
   def converge_intel_items(self, items):
     # This is fully idempotent and is a single call to setk() in practice so we
@@ -135,3 +129,27 @@ class MercenariesConnector:
 
     print(f'converge_intel: chapter={chapter} suit={suit} total={total_intel} target={target_intel}')
     self.game.set_intel(total_intel, target_intel)
+
+  def send_once(self, items):
+    '''
+    Send things that need to only be delivered once.
+
+    At the moment this means money (in the items array) and messages (in the
+    sendq). We don't care so much about losing messages (they're in the text
+    client, displaying them in-game is only useful if they're delivered
+    promptly) but we do care about losing money, so the latter gets returned
+    to the caller so it can be recorded server-side as having been delivered.
+    '''
+    total = sum([item.amount for item in items])
+    if not self.messages:
+      message = ''
+    else:
+      message = self.messages[0]
+
+    if self.game.send_once(money=total, message=message):
+      print(f'Successfully dispatched ${total:,d} and message {message}')
+      if self.messages:
+        self.messages.popleft()
+      return Counter(item.id for item in items)
+    else:
+      return Counter()

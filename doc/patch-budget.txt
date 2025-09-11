@@ -22,3 +22,7 @@
  37 167   util_DebugStartMissionChainLoading -- need to verify this is actually safe to hollow out
  31 114   DebugSkipToMission -- as above
   2  11   ConTooltip_Debug
+
+; possible string buffers
+gameflow_EvaluateFactionCondition k13 - error message, 141 chars
+AttemptFactionMoodClamp k11 - info message, 100 chars

@@ -3,7 +3,7 @@ Code patches for the Mercenaries rando.
 '''
 
 from .lopcode import LuaOpcode
-from .lua import LUA_TNUMBER, LUA_TSTRING
+from .lua import LUA_TNUMBER, LUA_TSTRING, LUA_TBOOL
 
 def patch(globals):
   patch_intel(globals)
@@ -13,8 +13,10 @@ def patch(globals):
   redirect_debug_prints(globals)
 
   return (
-    globals['gameflow_GetIntelTotal'].val().getk(0),
-    globals['AttemptFactionMoodClamp'].val().getk(9),
+    globals['gameflow_GetIntelTotal'].val().getk(0), # Intel counter
+    globals['AttemptFactionMoodClamp'].val().getk(9), # Money bonus
+    globals['AttemptFactionMoodClamp'].val().getk(11), # Message buffer
+    globals['AttemptFactionMoodClamp'].val().getk(13), # Message flag
   )
 
 def redirect_debug_prints(globals):
@@ -78,7 +80,7 @@ def patch_afmc(globals):
   +   CONST$00C4D878 k7  -100.0 mafia mood floor
   +   CONST$00C4D880 k8  -100.0 sk mood floor
   +   CONST$00C4D888 k9  0.0 money bonus
-  +   CONST$00C4D890 k10 'ui_PrintHudMessage' ; called, k11 is used as scratch space for the message
+  +   CONST$00C4D890 k10 'Ui_PrintHudMessage' ; called, k11 is used as scratch space for the message
   +   CONST$00C4D898 k11 '[global.lua] AttemptFactionMoodClamp: just finished first mission sequence; unclamping faction mood\n' [h=44BB274C,$00AA23C0]
       CONST$00C4D8A0 k12 'Utility_WriteNumberToScribbleMemory' [h=DCF55147,$009DC740]
   +   CONST$00C4D8A8 k13 false ; flag indicating that k11 contains a message to emit
@@ -105,7 +107,7 @@ def patch_afmc(globals):
       if not bDebugOutput then return end
       Player_SetMoney(Player_GetMoney() + <money bonus>)
       if <has_message> then
-        ui_PrintHudMessage(<message>)
+        Ui_PrintHudMessage(<message>)
       end
       bDebugOutput = not bDebugOutput
       return
@@ -116,6 +118,7 @@ def patch_afmc(globals):
   flag_name = globals['bDebugOutput_name']
   setmoney_name = globals['Player_SetMoney_name']
   getmoney_name = globals['Player_GetMoney_name']
+  hudmessage_name = globals['Ui_PrintHudMessage_name']
 
   with globals['AttemptFactionMoodClamp'].val().lock() as f:
     f.setk(0, sgsa_name, tt=LUA_TSTRING) # To be called
@@ -128,6 +131,9 @@ def patch_afmc(globals):
     f.setk(7, -100.0, tt=LUA_TNUMBER)
     f.setk(8, -100.0, tt=LUA_TNUMBER)
     f.setk(9, 0.0, tt=LUA_TNUMBER) # Money bonus
+    f.setk(10, hudmessage_name, tt=LUA_TSTRING) # To be called
+    # f.setk(11, "") # message buffer, will be set by caller as needed
+    f.setk(13, False, tt=LUA_TBOOL) # "pending message" flag
     f.patch(0, [
       # 00 <k0> gameflow_ShouldGameStateApply()
       LuaOpcode('GETGLOBAL', A=0, Bx=0),
@@ -156,17 +162,26 @@ def patch_afmc(globals):
       LuaOpcode('LOADK', A=2, Bx=8),
       LuaOpcode('CALL', A=0, B=3, C=1),
       # 20 if not <k2> bDebugOutput then return end
-      LuaOpcode('GETGLOBAL', A=0, Bx=2),
-      LuaOpcode('TEST', C=0, B=0, A=0), # FIXME this doesn't seem to be working right
+      LuaOpcode('GETGLOBAL', A=0, Bx=2), # from this moment on we keep bDebugOutput in r0
+      LuaOpcode('TEST', C=0, B=0, A=0),
       LuaOpcode('JMP', sBx=(77-23)), # 22, so PC is 23, and end of fn is 77
       # 23 <k3> Player_SetMoney(<k4> Player_GetMoney() + <k9> money bonus)
+      # bonus may be zero, hopefully that's a no-op?
       LuaOpcode('GETGLOBAL', A=1, Bx=3), # ... setmoney
       LuaOpcode('GETGLOBAL', A=2, Bx=4), # ... setmoney getmoney
       LuaOpcode('CALL', A=2, B=1, C=2),  # ... setmoney $player
       LuaOpcode('LOADK', A=3, Bx=9),     # ... setmoney $player $bonus
       LuaOpcode('ADD', A=2, B=2, C=3),   # ... setmoney $total
       LuaOpcode('CALL', A=1, B=2, C=1),
-      # 29 <k2> bDebugOutput = not bDebugOutput
+      # 29 if not <k13> has_message then return end
+      LuaOpcode('LOADK', A=1, Bx=13),
+      LuaOpcode('TEST', C=0, B=0, A=0),
+      LuaOpcode('JMP', sBx=(77-32)), # 31, so PC is 32
+      # 32 <k10> Ui_PrintDebugMessage(<k11> message)
+      LuaOpcode('GETGLOBAL', A=1, Bx=10),
+      LuaOpcode('LOADK', A=2, Bx=11),
+      LuaOpcode('CALL', A=1, B=2, C=1),
+      # 35 <k2> bDebugOutput = not bDebugOutput
       LuaOpcode('NOT', A=0, B=0),
       LuaOpcode('SETGLOBAL', A=0, Bx=2),
       # eof
