@@ -168,7 +168,12 @@ class MercenariesIPC:
     missions = self.refresh_mission_list()
     if not missions:
       return False
-    return mission < missions.getfield(faction).val()
+    try:
+      return mission < missions.getfield(faction).val()
+    except KeyError:
+      print('mission table access error')
+      missions.dump({}, 'M ')
+      return False
 
   def is_bounty_collected(self, type: str, count: int) -> bool:
     return self.stats.bounties_found()[type] >= count
