@@ -43,6 +43,7 @@ class MercenariesLocation(Location):
       address=location.id,
       parent=region)
     self.access_rule = location.access_rule(world)
+    self.progress_type = location.progress_type(world.options)
 
 class MercenariesEventToken(Item):
   game = 'Mercenaries'
@@ -169,8 +170,8 @@ class MercenariesWorld(World):
     for location in locations.all_locations():
       if not location.should_include(self.options):
         continue
-      chapter = chapters[location.chapter()]
-      print(f'Including location "{location.name()}" in {chapter}')
+      chapter = chapters[location.chapter(self.options)]
+      print(f'Including location "{location.name()}" in {chapter} ({location.progress_type(self.options)})')
       chapter.locations.append(MercenariesLocation(self, location, chapter))
       self.location_count += 1
 
@@ -254,6 +255,18 @@ class MercenariesWorld(World):
       and (vehicles >= target//5)
       and (supplies >= target//5)
       and (airstrikes >= target//5))
+
+  def current_chapter(self, state):
+    if state.has('Chapter 4 Complete', self.player):
+      return 5
+    elif state.has('Chapter 3 Complete', self.player):
+      return 4
+    elif state.has('Chapter 2 Complete', self.player):
+      return 3
+    elif state.has('Chapter 1 Complete', self.player):
+      return 2
+    else:
+      return 1
 
   def has_intel_for_chapter(self, state, chapter):
     '''

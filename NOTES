@@ -5,8 +5,6 @@
 Items marked with a ! are things I want to have working before alpha.
 
 - Checks:
-  - Number of bounties
-    - ! Option to set point beyond which there will be no progression items
   - Number of unique vehicles destroyed, and/or specific vehicle types
     - Need to map out which types belong to which array slots
     - Need to also evaluate which vehicles are available when so we can set

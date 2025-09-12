@@ -2,6 +2,8 @@ from itertools import chain
 from math import ceil,floor
 from typing import NamedTuple
 
+from BaseClasses import LocationProgressType
+
 from ..id import next_id
 
 class BountyLocation(NamedTuple):
@@ -18,7 +20,7 @@ class BountyLocation(NamedTuple):
     return f'{verb} {self.count} {self.type}{'s' if self.count > 1 else ''}'
 
   def should_include(self, options):
-    if self.chapter() > options.goal:
+    if self.chapter(options) > options.goal:
       return False
 
     nrof_checks = options.bounty_checks[self.type]
@@ -35,11 +37,18 @@ class BountyLocation(NamedTuple):
         for n in range(nrof_checks)
       }
 
-  def chapter(self):
-    chapter = ceil(self.count/self.total*4)
-    if self.count > SOUTH_BOUNTIES[self.type]:
-      chapter = max(3, chapter)
-    return chapter
+  def progress_type(self, options):
+     max_count = self.count_for_chapter(options, int(options.goal))
+     if self.count <= max_count:
+       return LocationProgressType.DEFAULT
+     else:
+       return LocationProgressType.EXCLUDED
+
+  def chapter(self, options):
+    for chapter in [1,2,3,4]:
+      if self.count <= self.count_for_chapter(options, chapter):
+        return chapter
+    return 4
 
   def groups(self):
     return {'bounties', f'{self.type}_bounties'}
@@ -52,6 +61,14 @@ class BountyLocation(NamedTuple):
     # items found in the bounty sequences?
     return False
 
+  def count_for_chapter(self, options, chapter):
+    scale = options.bounty_progression_limit/100
+    match chapter:
+      case 1: return self.count_for_chapter(options, 2)//2
+      case 2: return SOUTH_BOUNTIES[self.type] * scale
+      case 3: return (self.count_for_chapter(options, 2) + self.count_for_chapter(options, 4))//2
+      case 4: return self.total * scale
+
   def access_rule(self, world):
     # There aren't really any hard limits on when the player can go out and find
     # these, except that the NK ones aren't accessible in the first half of the
@@ -63,7 +80,13 @@ class BountyLocation(NamedTuple):
     # the same combat logic as missions.
     rank = ceil(self.count/self.total*12)
     def rule(state):
-      return world.has_combat_power_for_rank(state, rank)
+      chapter = world.current_chapter(state)
+      if chapter < world.options.goal:
+        return (
+          self.count <= self.count_for_chapter(world.options, chapter)
+          and world.has_combat_power_for_rank(state, rank))
+      else:
+        return world.has_combat_power_for_rank(state, rank)
 
     return rule
 

@@ -1,7 +1,7 @@
 from itertools import chain
 from typing import NamedTuple, Set
 
-from BaseClasses import Region
+from BaseClasses import Region,LocationProgressType
 
 from ..id import next_id
 
@@ -26,7 +26,10 @@ class MissionLocation(NamedTuple):
   def should_include(self, options):
     return self.min_chapter <= options.goal
 
-  def chapter(self):
+  def progress_type(self, options):
+    return LocationProgressType.DEFAULT
+
+  def chapter(self, options):
     return self.min_chapter
 
   def groups(self):

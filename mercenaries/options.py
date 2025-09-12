@@ -18,8 +18,8 @@ Options that will be useful once we have more features:
 class Goal(NamedRange):
   '''
   Select a win condition. The default is to complete chapter 4 by verifying the
-  Ace of Spades, but if you want a shorter game you can select an earlier chapter
-  as your goal.
+  Ace of Spades, but if you want a shorter game you can select an earlier
+  chapter as your goal.
   '''
   display_name = 'Win Condition'
   range_start = 1
@@ -125,8 +125,8 @@ class ShopDiscountPercent(Range):
 class BountyChecks(OptionDict):
   '''
   As in the vanilla game, you get rewarded for reaching bounty totals, not
-  specific individual bounties. This setting controls how many checks are available
-  in each bounty category.
+  specific individual bounties. This setting controls how many checks are
+  available in each bounty category.
 
   The default of 'vanilla' uses the same breakpoints as the vanilla game, which
   is every 10 + some extras depending on the bounty type. A setting of 'all'
@@ -148,6 +148,25 @@ class BountyChecks(OptionDict):
     'monument': 'vanilla',
   }
 
+class BountyProgressionLimit(Range):
+  '''
+  Controls how far into the bounty checks progression items are allowed to
+  occur. This prevents games where vital progression items can be locked behind
+  stuff like "find every blueprint in the game", which is often more tedious
+  than fun.
+
+  A setting of 0% means that bounties will only contain filler. A setting of
+  100% means that progression items can be locked behind any number of bounties
+  and completing the game could potentially require finding every single bounty.
+
+  This is applied per-chapter, so a setting of 50% will only put half of the
+  south province bounties in logic in chapter 2, etc.
+  '''
+  display_name = 'Bounty Progression Limit %'
+  range_start = 0
+  range_end = 100
+  default = 50
+
 @dataclass
 class MercenariesOptions(PerGameCommonOptions):
   goal: Goal
@@ -159,3 +178,4 @@ class MercenariesOptions(PerGameCommonOptions):
   shop_unlock_count: ShopUnlockCount
   shop_discount_percent: ShopDiscountPercent
   bounty_checks: BountyChecks
+  bounty_progression_limit: BountyProgressionLimit
