@@ -44,6 +44,7 @@ class MercenariesIPC:
   intel_total: Lua_TObject
   deck: DeckOf52
   stats: PDAStats
+  latest_chapter: int = 0
 
   def __init__(self, pine_path: str) -> None:
     self.pine = Pine(pine_path)
@@ -177,6 +178,8 @@ class MercenariesIPC:
     except KeyError:
       self.mission_cache = {}
     self.bounty_cache = self.stats.bounties_found()
+    self.card_cache = self.deck.deck_status()
+    self.latest_chapter = self.current_chapter()
 
     try:
       yield self
@@ -187,13 +190,17 @@ class MercenariesIPC:
     self.doing_location_checks = False
     self.bounty_cache = None
     self.mission_cache = None
+    self.card_cache = None
 
   def is_checked(self, location):
     assert self.doing_location_checks
     return location.is_checked(self)
 
   def is_card_verified(self, suit, rank):
-    return self.deck.is_verified(suit, rank)
+    return self.card_cache[suit][rank-1] > 1
+
+  def is_card_captured(self, suit, rank):
+    return self.card_cache[suit][rank-1] > 2
 
   def is_mission_complete(self, faction: str, mission) -> bool:
     return mission < self.mission_cache.get('faction', 0)

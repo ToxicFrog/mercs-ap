@@ -42,7 +42,7 @@ class MercenariesConnector:
 
   #### Readers ####
   def current_chapter(self):
-    return self.game.current_chapter()
+    return self.game.latest_chapter
 
   def get_new_checks(self, missing: Set[int]):
     # TODO: this is where missable handling needs to go once it's implemented.
@@ -115,7 +115,7 @@ class MercenariesConnector:
   def converge_intel_items(self, items):
     # This is fully idempotent and is a single call to setk() in practice so we
     # just do it unconditionally each time.
-    chapter = self.game.current_chapter()
+    chapter = self.current_chapter()
     suit = ['clubs', 'diamonds', 'hearts', 'spades'][chapter-1]
     total_intel = sum(
       item.intel_amount() for item in items

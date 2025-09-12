@@ -23,9 +23,21 @@ class DeckOf52:
       'spades':   MemVarArray(pine, MemVarInt, SPADES_PTR, 0x28, 13),
     }
 
-  def is_verified(self, suit, rank):
+  def card_status(self, suit, rank):
     if rank == 1:
       # Aces are internally considered rank 14, above kings; rank 1 is empty
       rank = 14
     rank -= 2 # Arrays are zero-indexed and the 2 of X occupies index 0
-    return self.cards[suit][rank]() > 1
+    return self.cards[suit][rank]()
+
+  def is_verified(self, suit, rank):
+    return self.card_status(suit, rank) > 1
+
+  def is_captured(self, suit, rank):
+    return self.card_status(suit, rank) > 2
+
+  def deck_status(self):
+    return {
+      suit: [self.card_status(suit, rank+1) for rank in range(13)]
+      for suit in ['clubs', 'diamonds', 'hearts', 'spades']
+    }
