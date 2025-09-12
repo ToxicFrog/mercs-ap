@@ -3,18 +3,26 @@
 This is an [Archipelago Multiworld Randomizer](https://archipelago.gg) for the
 PS2 game *Mercenaries: Playground of Destruction*.
 
-## Overview
+## Features
 
-Instead of getting intel from Deck of 52 verifications and shop unlocks from
-mission objectives, both missions and verifications can randomly reward intel,
-shop unlocks, or money.
+### Checks
 
-Intel behaviour can be customized: you can use a fixed number of "intel tokens"
-per Ace rather than the vanilla card-based intel, and/or use progressive intel
-that is not tied to a specific suit.
+Completing missions and verifying members of the Deck of 52 will count as AP checks. Collecting bounties will also produce checks, with the number of bounties needed per check configurable in the yaml.
 
-Monetary rewards from objectives are not randomized; money added to the pool as
-filler is in addition to the money you earn by playing normally.
+In all cases, the vanilla monetary and faction rewards are left intact; the AP check replaces the shop unlock or Ace intel you would normally get.
+
+### Items
+
+Progression items are Ace intel -- which can be configured to be suited or progressive, and to use the vanilla intel amounts or a fixed number of 'intel tokens' per Ace -- and Merchant of Menace unlocks. Duplicate shop unlocks act as a stacking discount for the item in question.
+
+Filler items are cash bonuses (ranging from $50k to $500k) and permanent faction reputation increases (with diminishing returns).
+
+### Hints
+
+Completing a mission that gives in-game hints about the location of a Number will also give an AP hint for what item that Number is carrying.
+
+Capturing a Card alive will give you a hint for a random progression item, either someone else's in your world, or one of yours in someone else's world.
+
 
 ## Setup
 
@@ -22,25 +30,22 @@ filler is in addition to the money you earn by playing normally.
 
 - [Archipelago](https://archipelago.gg)
 - The [apworld](./release/mercenaries.apworld)
-- A **US** copy of "Mercenaries: Playground of Destruction"
-  - Game ID is SLUS-20932, with mdsum `316ad24970b2f19558bc2bda7eb98d81`
-  - Subtitles patch is supported
-  - Other regions/languages are not supported
+- A **US** copy of "Mercenaries: Playground of Destruction", with game ID `SLUS-20932`
 - [PCSX2](https://pcsx2.net/) to play it with
   - Real hardware not supported, sorry
 
 ### First-time setup
 
-Get PCSX2 installed and running and make sure you can actually play Mercenaries
-in it. Once you have that, open up `System -> Settings -> Advanced`, scroll to
-the bottom, and tick `PINE Settings -> Enable`. Leave the `Slot` at the default
-of 28011.
+Get PCSX2 installed and running and make sure you can actually run Mercenaries
+in it. Once you have that, change the following settings:
+- `Tools -> Show Advanced Settings` **on**
+- `System -> Settings -> Advanced -> PINE Settings -> Enable` **on**
+- `System -> Settings -> Advanced -> PINE Settings -> Slot` **28011** (should be the default)
 
-If your computer is sufficiently powerful, you may also want to go to
+If your computer is sufficiently powerful, you may also want to open up
 `Settings -> Game Properties -> Emulation` and set the `EE Cycle Rate` to 180%
-or 300%; at default speeds Mercenaries tends to drop from 30fps to 20fps in
-busy scenes, but it tolerates high clock rates well and if your computer can
-keep up this should get you a consistent 30fps.
+or 300%; at default speeds Mercenaries tends to drop from 30fps to 20fps in busy
+scenes, but on a fast computer this will let it maintain 30fps without drops.
 
 ### Per-game setup
 
@@ -48,27 +53,21 @@ Configuration and generation works basically the same as any other AP game; see
 the generated YAML for options. To join, just click `Mercenaries Client` in the
 AP launcher and it should automatically connect to PCSX2.
 
-## Gameplay
 
-The game plays out more or less as usual, except that the intel
-you need to take on the Ace at the end of each chapter is in the random item
-pool, and the amount needed may be non-vanilla.
+## Known Issues and Limitations
 
-Mission completions and card verifications will randomly award intel, shop
-unlocks, or bonus money (in addition to their vanilla monetary rewards).
+Card verifications may not be registered by AP until the next time you open your
+PDA in-game.
 
-### Known Issues
+Messages and some items can only be delivered to Mercenaries at certain points
+in execution, which means there may be a significant delay between getting
+something in AP and it showing up in-game. This is particularly the case with
+money, intel, and faction reputation adjustments. Wandering around the game and
+doing things to force it to load/unload areas and NPCs tends to speed up this
+process.
 
-Due to limitations in the AP<->Mercs connection, item and check delivery does
-not always happen immediately. In particular, some checks are not delivered to
-AP until the next time you open your PDA, and most items cannot be delivered
-unless you are on foot (i.e. not in a cutscene or a vehicle).
-
-Intel items, additionally, will not appear in-game until the next time the game
-checks your intel catalogue. This tends to happen naturally, but if you're
-having trouble, completing a challenge or saving and then reloading your game
-will probably work.
-
+Windows is not currently supported, and needs some changes to the emulator
+connection code to function.
 
 ## Future Work
 
@@ -80,8 +79,8 @@ yet to figure out if they're viable; this is a wishlist, not a roadmap.
   - Challenges
   - Vehicles driven/destroyed catalogue entries
 - New items:
+  - "Floating" shop discounts
   - Shop coupons
-  - Reputation bonuses
   - Character skins
   - Health/ammo/grenade refills
 - Improved logic:
