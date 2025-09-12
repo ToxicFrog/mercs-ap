@@ -98,10 +98,20 @@ class MercenariesWorld(World):
   def create_item(self, name: str) -> MercenariesItem:
     return MercenariesItem(self, items.item_by_name(name))
 
+  def get_filler_item_name(self):
+    return self.create_filler(1).name
+
   def create_filler(self, amount):
+    weights = {
+      name: items.item_by_name(name).count(None)
+      for name in self.item_name_groups['filler']
+    }
     return [
       self.create_item(name)
-      for name in random.choices(list(self.item_name_groups['filler']), k=amount)
+      for name in random.choices(
+        population=list(weights.keys()),
+        weights=list(weights.values()),
+        k=amount)
     ]
 
   def generate_early(self) -> None:

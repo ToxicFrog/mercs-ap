@@ -10,33 +10,14 @@ At present this means:
 from itertools import chain
 from typing import NamedTuple
 
-from BaseClasses import CollectionState, Item, ItemClassification, Location, MultiWorld, Region, Tutorial, LocationProgressType
+from BaseClasses import ItemClassification
 
-from ..id import next_id
 from .intel import CARD_INTEL, GENERIC_INTEL
 from .shop import SHOP_ITEMS
-
-class MoneyItem(NamedTuple):
-  id: int
-  amount: int
-
-  def name(self):
-    return f'${self.amount:,d}'
-
-  def count(self, options):
-    return 0
-
-  def classification(self):
-    return ItemClassification.filler
-
-  def groups(self):
-    return {'money', 'filler'}
-
-
-MONEY = {MoneyItem(next_id(), amount) for amount in [50_000, 100_000, 250_000, 500_000]}
+from .filler import FILLER
 
 def all_items():
-  return chain(CARD_INTEL, GENERIC_INTEL, SHOP_ITEMS, MONEY)
+  return chain(CARD_INTEL, GENERIC_INTEL, SHOP_ITEMS, FILLER)
 
 def all_items_in_groups(groups):
   return (item for item in all_items() if item.groups() >= groups)
@@ -57,7 +38,7 @@ def group_to_names_map():
   return groups
 
 def all_progression_items():
-  return all_items()
+  return (item for item in all_items() if item.classification() & ItemClassification.progression)
 
 def item_by_name(name):
   return ITEMS_BY_NAME[name]
