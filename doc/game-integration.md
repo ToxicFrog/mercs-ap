@@ -7,10 +7,66 @@ In some cases, we can simply read or write memory directly, but in others we're
 getting weird with it and injecting lua bytecode and suchlike.
 
 
-## Items
+## The main hook into Lua
 
-These are things we need to write to the game as we receive them from AP.
+Since much of the game logic is implemented in Lua, it is convenient to be able
+to inject our own Lua code, and call it, both to implement changes and to extract
+data from the game. Unfortunately, we have no safe way of directly doing this; we
+can neither allocate memory (necessary for creating new functions) nor manipulate
+the lua data stack and invoke C functions (necessary for calling those functions)
+without a lot more reverse engineering work and a serious risk of memory corruption.
 
+Instead, we repurpose existing functions that either do nothing useful (e.g. debug
+print functions that are useless without a serial debugger attached to a dev console)
+or have code that we can safely replace (logging statements, game logic that is
+superseded by the randomizer).
+
+Changes to individual functions to support specific use cases are documented below;
+this section describes the "top-level" hook.
+
+### `ApplyFactionMoodClamp`
+
+This is our main entry point. It is a large function (25 constants, 77 instructions)
+but most of it is bookkeeping to figure out where you are in the game, and apply
+a mood floor based on that (-59 in the tutorial, -100 otherwise) to all factions.
+Since the AP version uses AP items to adjust mood floor, and the logic for that
+is contained in the client rather than in the game, we can cut that down to 9
+constants and 16 instructions, leaving the other 16/61 free.
+
+Into this function, we can then insert code to call other functions we need (at a cost
+of 1 constant and 2 instructions per call); when this document says that a function
+is "hooked", this is what it means. We can also simply add bespoke code for any purpose,
+if there is no existing function we can make use of.
+
+### `bDebugOutput`
+
+This is used as a deliver-once flag. Some of what we insert into the game, like
+money or event messages, needs to be delivered once only, not every time the hooks
+are called. To that end, we use this global, which is (in normal play) always present
+and always false.
+
+The back half of `ApplyFactionMoodClamp` is used for deliver-once code, and is
+skipped entirely if `bDebugOutput` is false:
+
+    [to include the relevant TEST instruction here]
+
+If it is true, that code is executed and the flag reset to false. The AP client
+can then see that those items were delivered (by the flag changing from true to
+false) and, if needed, insert more items and set the flag to true again.
+
+### `Debug_Printf` and `util_PrintDebugMsg`
+
+These functions are effectively no-ops in the production build, but they are called
+*all over the place*. By replacing their entries in `_G` with alternate references
+to `ApplyFactionMoodClamp`, we ensure that it -- and thus our hooks -- get called
+on a regular basis; generally speaking, moving far enough that parts of the world
+need to load/unload or doing something that affects faction reputation is sufficient.
+
+
+## Sending
+
+This section covers things we need to insert into the game in response to changes
+to AP.
 
 ### Merchant of Menace unlocks
 
@@ -25,9 +81,6 @@ Each one corresponds to a MOM unlock and they appear in the order the player has
 unlocked them. The `new` tag is used to display the "New!" indicator in the
 shop UI. The `tag` denotes which actual item is unlocked; see `shopdata.py`
 for a complete list.
-
-Note that the price is here and not in some master template; that means we can
-implement discounts (or price hikes) as we see fit.
 
 At `$51F47C` there is some additional metadata:
 
@@ -47,27 +100,40 @@ This means that to remove elements, we swap them into tail position (if
 necessary) and decrement `total_unlocked`, and to add elements, we write them at
 the tail and then increment `total_unlocked`.
 
+Discounts are handled entirely AP-side; we hardcode the "base price" of each item
+in the AP client, then compute the discounted price based on what items the player
+has found and that is what gets written to memory.
+
 
 ### Money
 
 Reading money is easy: `$00558BF0` and `$00558BF0` contain the current and
-target amounts displayed on the HUD, as integers, and we can simply read those.
+target amounts displayed on the HUD, as integers, and we can simply read those,
+should we need to.
 
-Writing money is harder. It's stored as a float at offset 0xB60 in a struct
-somewhere. The "somewhere" is the hard part; stable pointers to this struct are
-hard to find.
+Writing money is harder. It's stored as a float, at offset 0xB60 into a struct
+that is dynamically allocated and moves around regularly, and to which stable
+pointers are hard to find. So, we bypass this completely and instead do it in
+Lua.
 
-The best I've managed so far is `$00558B4C`, which points to it, but only if the
-player is on foot. If in a vehicle, it appears to point to the vehicle instead.
-Fortunately, there are flags for that at `$00558B10` (true if the player is on
-foot) and `$00558B14` (true if the player is driving).
+Lua exposes three functions for this: `Player_GetMoney`, `Player_SetMoney`, and
+`Player_AdjustMoney`. The latter takes a delta and would cost fewer instructions
+to call as a result, but also expects a second argument of unclear purpose, and
+there is prior art in `challenge_Recycler_Start` demonstrating the validity of
+the read-modify-write approach using the former two functions:
 
-So, to update money, we first read `$00558B10` to check the player's state. If
-that's 1, we read `$00558B4C` to get the struct address, add 0xB60 to get the
-money field, and then read-modify-write.
+    011 010000C5 GETGLOBAL r1 := _G[k3 ('Player_SetMoney' [h=F58D4D46,$00986300])]
+    012 02000085 GETGLOBAL r2 := _G[k2 ('Player_GetMoney' [h=21DC1219,$009862E0])]
+    013 02008099      CALL r2 (0 args) => 1 results
+    014 03003E86  GETTABLE r3 := r0[k0 ('nDeposit' [h=0D68C875,$00988E00])]
+    015 020100CD       SUB r2 := r2 - r3
+    016 01010059      CALL r1 (1 args) => 0 results
 
-TODO: in the future, if we can do this by lua code injection calling
-`Player_AdjustMoney()`, that would be much safer.
+So, we use three constant slots (one for each function and one for the actual
+amount of money to be delivered) and six instructions (as above) in the deliver-once
+hook code to grant the player money. To deliver money, we simply set the amount-of-money
+constant to our desired value, set the delivery flag, and the next time the hooks
+run it will appear in their account.
 
 
 ### Intel
@@ -89,41 +155,43 @@ returns whatever's in k0 immediately. k0 is, conveniently, already a numeric
 constant (0), so by writing to its value slot from outside the game, we directly
 control the perceived intel total.
 
-This is not sufficient in itself, however; `AttemptAceMissionUnlock` is called
-only when you verify a card, which means you can end up in a state where you
-have no actions remaining that will trigger it. We want it to be called
-frequently, if possible. Conveniently, there are two functions that are called
-very frequently but also do nothing important to gameplay: `Debug_Printf` and
-`util_PrintDebugMsg`. By modifying the global hash table entries for these to
-instead point to `AttemptAceMissionUnlock`, we guarantee it is frequently called
-and the ace mission is unlocked as soon as the player has sufficient intel.
+This done, all we need to do is hook `gameflow_AttemptAceMissionUnlock` to be called
+regularly, instead of only on card verification; once the player has enough intel
+they will generally get the ace mission email in under a minute.
+
+N.b. I have not yet figured out how the progress bar in the PDA is computed; it
+doesn't seem to be based on `gameflow_GetIntelTotal`.
+
+
+### Faction reputation floor increases
+
+This is easy because (as discussed earlier) `AttemptFactionMoodClamp` already
+does this; we just need to grab four constants from its constant table, one for
+each faction, and adjust them as we see fit, and the floors will be adjusted
+next time the hooks run. Faction floor settings are idempotent so there are no
+concerns about multi-delivery; we just compute the effective floor in the AP client
+and inject it.
 
 
 ### Future work
 
 At some point I would also like to add support for:
-- shop discounts
-  - already doable via the unlock array
-- faction reputation bonuses
-- reputation floor bonuses
-  - k-hacking on AttemptFactionMoodClamp
+- one-time faction reputation bonuses
 - airstrike coupons
 - health/ammo/grenade refills
 - hints
-  - missions that give number location info can also give hints about what they're carrying
   - capturing a number alive can give a hint about a progression item, perhaps?
 
 
-## Checks
+## Receiving
 
-These are the things the player can do in-game to result in location checks
-being sent to AP. Despite only reading and not modifying the game state, this
-is not any simpler.
+This section covers things we need to do to extract information from the game,
+typically for the purpose of figuring out which checks the player has hit.
 
 
 ### Deck of 52
 
-Ok, this one actually is simple.
+This is the simplest.
 
 The status for the Two of Clubs is stored at `$005240e4`. The rest of the cards
 are stored in the memory that follows, with a spacing of 0x28 bytes, in suit
@@ -135,11 +203,12 @@ A value of 1 means they are at large; 2 means killed, and 3 captured.
 
 The one caveat is that card status sometimes does not update until the next time
 the player opens their PDA, so there may be a delay before a card verification
-becomes visible in memory.
+becomes visible in memory. We may, in the future, be able to eliminate this
+latency by injecting code into `gameflow_DeckCardVerified` instead.
 
 #### Chapter inference
 
-Some future features depend on knowing what chapter the player is in. For our
+Some features, including telling if the game is completed, depend on knowing what chapter the player is in. For our
 purposes we can get away with inferring this based on Ace status, since chapter
 transitions are always triggered by a mission in which you must verify an Ace.
 
@@ -183,48 +252,15 @@ vaguely relevant. So we patch the code accordingly:
     025 00000000       NOP
     026 00000000       NOP
 
-And now we can easily fish the data out of _G with `L.getglobal(1).val`.
+And now we can easily fish the data out of _G with
+`L.getglobal('mission_accepted).val`. The only hazard is that we write a new
+`mission_accepted` table every time this is called, which means the old one
+becomes subject to garbage collection; we can hold a reference to the table node
+but cannot safely hold a reference to the table itself long-term.
 
-Unfortunately, this requires the function to actually get called, and it looks
-like it is in normal play only called during lua VM initialization. So we need
-to hook it from `Debug_Printf` and/or `util_PrintDebugMsg`, which we previously
-redirected to `gameflow_AttemptAceMissionUnlock`.
-
-There's not much we can do with `AttemptAceMissionUnlock`, but perhaps, instead
-of replacing `util_PrintDebugMsg` with a pointer to it, we can rewrite it to
-call both `AttemptAceMissionUnlock` and `ShouldGameStateApply`.
-
-It's pretty small, with two constants and six free instructions:
-
-    CONST$009609A0 k0  'bDebugOutput' [h=2660F98C,$009A6CC0]
-    CONST$009609A8 k1  'Debug_Printf' [h=445430CF,$0098B6A0]
-    CODE $009974E0
-      000 01000005 GETGLOBAL r1 := _G[k0 ('bDebugOutput' [h=2660F98C,$009A6CC0])]
-      001 01008018      TEST not r1: r1 := r1 ; or skip
-      002 00800094       JMP +3 ; 6
-      003 01000045 GETGLOBAL r1 := _G[k1 ('Debug_Printf' [h=445430CF,$0098B6A0])]
-      004 02000000      MOVE r2 := r0
-      005 01010059      CALL r1 (1 args) => 0 results
-      006 0000801B    RETURN r0 ... r-1
-
-But it's big enough to work with.
-
-First, we replace the constants with the names of the two functions we want to
-call:
-
-    CONST$009609A0 k0  'gameflow_ShouldGameStateApply'
-    CONST$009609A8 k1  'gameflow_AttemptAceMissionUnlock'
-
-Then we replace the function body:
-
-    000 00000005 GETGLOBAL r0 := _G[k0]
-    001 00008059      CALL r0 (0 args) => 0 results
-    002 00000045 GETGLOBAL r0 := _G[k1]
-    003 00008059      CALL r0 (0 args) => 0 results
-    004 0000801B    RETURN r0 ... r-1
-
-Of course, this produces a new problem: `ShouldGameStateApply` expects 3
-arguments and we are providing none. Fortunately, none of them are needed until
+We now simply need to call `ShouldGameStateApply`. This is done by hooking it in
+the usual manner, but that engenders a new problem: it expects three arguments,
+and we don't know what they should be. Fortunately, none of them are needed until
 after we have exfiltrated the mission completion data, and we have two spare
 instructions we can use to replace with an early exit if the first argument is
 nil (which should never happen normally, since immediately afterwards it does
@@ -239,22 +275,38 @@ Which is equivalent to the Lua code:
     mission_accepted = { ... }
     if not r0 then return end
 
-Thus allowing us to safely call it with no arguments, in which case it will
-save the data we need in _G and then return, doing no other work.
+This ensures that when called via the hook, it simply produces the table, stores
+it in _G, and returns without doing any other work.
+
+N.b. There is a global table, `tCurrentMissions`, which contains exactly the information
+we need; however, it doesn't seem to exist reliably. It may nonetheless be useful
+if we can be sure it exists often enough.
+
+
+### Bounty collection
+
+It would be really nice if I could figure out which specific bounties have been
+collected, but I have yet to figure that out.
+
+In the meantime, we can get the bounty count by reading some string buffers, which
+I believe are used for the PDA display of bounty stats.
+
+To get to them, we first read some offsets from known addresses:
+
+    $0050202A - listening posts
+    $00502BE0 - blueprints
+    $00502202 - monuments
+    $00502294 - treasures
+
+We then add the offset to 0x00da38c0 and that gives us the starting point of a
+null terminated string containing the decimal form of the number of bounties of
+that type collected.
 
 
 ### Future work
 
-- bounties (listening posts, blueprints, treasures, monuments)
-  - util_GetBountyName might be useful here? called from nextsw and nextnw
-  - references g_iCurrentNwBountyIndex and g_iCurrentSwBountyIndex, neither of
-    which are actually defined :/
-  - found some useful strings, which don't tell me which ones have been collected
-    but do have total counts
 - mission bonus objectives
 - challenges
 - first time you drive each kind of vehicle
 - first time you destroy each kind of vehicle
   - above three can probably be gotten in the same manner as bounties
-
-## Money

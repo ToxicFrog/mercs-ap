@@ -109,7 +109,13 @@ class MercenariesIPC:
     except KeyError:
       raise IPCError('lua_State is still initializing')
 
-    (self.intel_total, self.money_bonus, self.message_buffer, self.message_flag) = patch(globals)
+    (
+      self.intel_total,
+      self.money_bonus,
+      self.message_buffer,
+      self.message_flag,
+      self.reputation_floors,
+    ) = patch(globals)
     self.debug_flag = globals['bDebugOutput']
     self.L_ptr = L_ptr
     print('Code injection complete.')
@@ -259,3 +265,7 @@ class MercenariesIPC:
   def set_intel(self, amount, target):
     self.validate()
     self.intel_total.set((amount/target) * 80.0)
+
+  def set_reputation_floor(self, faction, floor):
+    self.validate()
+    self.reputation_floors[faction].set(floor)

@@ -12,11 +12,18 @@ def patch(globals):
   patch_afmc(globals)
   redirect_debug_prints(globals)
 
+  afmc = globals['AttemptFactionMoodClamp'].val()
   return (
     globals['gameflow_GetIntelTotal'].val().getk(0), # Intel counter
-    globals['AttemptFactionMoodClamp'].val().getk(9), # Money bonus
-    globals['AttemptFactionMoodClamp'].val().getk(11), # Message buffer
-    globals['AttemptFactionMoodClamp'].val().getk(13), # Message flag
+    afmc.getk(9), # Money bonus
+    afmc.getk(11), # Message buffer
+    afmc.getk(13), # Message flag
+    { # Reputation floors
+      'allies': afmc.getk(5),
+      'china': afmc.getk(6),
+      'mafia': afmc.getk(7),
+      'sk:':  afmc.getk(8),
+    }
   )
 
 def redirect_debug_prints(globals):

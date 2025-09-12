@@ -66,6 +66,9 @@ class MercenariesConnector:
     }
 
   #### Writers ####
+  def item_group(self, group: str, items: List[int]) -> List[int]:
+    return [item for item in items if group in item.groups()]
+
   def send_items(self, items: List[int]) -> Set[int]:
     '''
     Send the specified items to the game. This is the complete list of items the
@@ -81,9 +84,10 @@ class MercenariesConnector:
     items = [item_by_id(id) for id in items]
     sent_items = Counter()
     try:
-      self.converge_shop_items([item for item in items if 'shop' in item.groups()])
-      self.converge_intel_items([item for item in items if 'intel' in item.groups()])
-      sent_items += self.send_once([item for item in items if 'money' in item.groups()])
+      self.converge_shop_items(self.item_group('shop', items))
+      self.converge_intel_items(self.item_group('intel', items))
+      self.converge_reputation_items(self.item_group('reputation', items))
+      sent_items += self.send_once(self.item_group('money', items))
     except IPCError as e:
       logger.info(f'Error sending items to game, will retry later: {e}')
 
@@ -129,6 +133,19 @@ class MercenariesConnector:
 
     # print(f'converge_intel: chapter={chapter} suit={suit} total={total_intel} target={target_intel}')
     self.game.set_intel(total_intel, target_intel)
+
+  def converge_reputation_items(self, items):
+    factions = Counter()
+    for item in items:
+      factions[item.faction()] += 1
+    for faction, count in factions.items():
+      if count <= 2:
+        floor = -100 + (50*count)
+      else:
+        floor = 100 - (100 * 0.9 ** (count-2))
+      # self.game.set_reputation_floor(faction, floor)
+      self.game.set_reputation_floor(faction, 80)
+    self.game.set_reputation_floor('allies', 95)
 
   def send_once(self, items):
     '''
