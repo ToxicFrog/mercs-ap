@@ -143,9 +143,7 @@ class MercenariesConnector:
         floor = -100 + (50*count)
       else:
         floor = 100 - (100 * 0.9 ** (count-2))
-      # self.game.set_reputation_floor(faction, floor)
-      self.game.set_reputation_floor(faction, 80)
-    self.game.set_reputation_floor('allies', 95)
+      self.game.set_reputation_floor(faction, floor)
 
   def send_once(self, items):
     '''

@@ -22,7 +22,7 @@ def patch(globals):
       'allies': afmc.getk(5),
       'china': afmc.getk(6),
       'mafia': afmc.getk(7),
-      'sk:':  afmc.getk(8),
+      'sk':  afmc.getk(8),
     }
   )
 
