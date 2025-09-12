@@ -25,6 +25,7 @@ class MercenariesContext(SuperContext):
   want_slot_data = True
   tags = {'AP'}
   hintables = set()
+  capture_hints = set()
   connector: MercenariesConnector = None
 
   def __init__(self, server_address: str, slot_name: str, password: str, pine_path: str):
@@ -39,6 +40,7 @@ class MercenariesContext(SuperContext):
     super().reset_server_state()
     self.connector = None
     self.hintables = set()
+    self.capture_hints = set()
 
   def make_gui(self):
     ui = super().make_gui()
@@ -168,11 +170,24 @@ class MercenariesContext(SuperContext):
             'operations': [{'operation': 'replace', 'value': old_sent_items + new_sent_items}]}
             ])
 
-        # Report new checks
-        self.locations_checked |= connector.get_new_checks(self.missing_locations)
+        # Get new checks and capture-based hints.
+        (new_checks,new_hints) = connector.get_checks_and_hints(
+          self.missing_locations, self.slot_data['hints_from_cards'])
+
+        # Report new checks.
+        self.locations_checked |= new_checks
         await self.check_locations(self.locations_checked)
 
-        # Hint any locations we got hint intel for.
+        # Hint locations (not necessarily in our game) from capturing cards alive.
+        if not new_hints <= self.capture_hints:
+          self.capture_hints |= new_hints
+          await self.send_msgs([
+            {'cmd': 'CreateHints', 'locations': [hint[0]], 'player': hint[1] }
+            for hint in new_hints
+          ])
+
+        # Hint the contents of verification checks that we've gotten hints for
+        # from completing missions.
         hintables = connector.get_hintable_checks(self.checked_locations, self.missing_locations)
         if hintables != self.hintables:
           self.hintables = hintables

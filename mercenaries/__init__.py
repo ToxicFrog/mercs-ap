@@ -199,7 +199,50 @@ class MercenariesWorld(World):
       return state.has(f'Chapter {self.options.goal} Complete', self.player)
     self.multiworld.completion_condition[self.player] = goal
 
+  def get_progression_hints(self):
+    '''
+    Get a list of up to 52 locations that we will provide hints for in exchange
+    for capturing members of the Deck alive.
+
+    We can only hint our own items, or other people's items in our own locations.
+    So our priority for this is something like:
+    - our own intel items;
+    - other people's progression items in our world;
+    - the rest of our progression items.
+    '''
+    # Initially populate with our intel items
+    hintables = [
+      item for item in self.multiworld.get_items()
+      if item.player == self.player
+      and item.code is not None
+      and 'intel' in items.item_by_id(item.code).groups()
+    ]
+    # If that's not enough add everyone else's progression items in our world
+    if len(hintables) < 52:
+      extras = [
+        item for item in self.multiworld.get_items()
+        if item.player != self.player
+        and item.advancement()
+        and item.location.player == self.player
+      ]
+      self.random.shuffle(extras)
+      hintables += extras[0:52-len(hintables)]
+    # If that's still not enough, add the rest of our progression items, which
+    # includes all shop items and is definitely enough.
+    if len(hintables) < 52:
+      extras = [
+        item for item in self.multiworld.get_items()
+        if item.player == self.player
+        and item.advancement()
+        and 'intel' not in items.item_by_id(item.code).groups()
+      ]
+      self.random.shuffle(extras)
+      hintables += extras[0:52-len(hintables)]
+
+    return self.random.sample(hintables, k=52)
+
   def fill_slot_data(self):
+
     # Search the multiworld for stuff we want to hint from card captures.
     # We can do this with multiworld.get_items() and then check item.classification,
     # item.player, and item.location.address
@@ -213,7 +256,13 @@ class MercenariesWorld(World):
       'vanilla_intel', 'vanilla_intel_target',
       'intel_in_pool', 'intel_target', 'progressive_intel',
       'shop_discount_percent',
-      toggles_as_bools=True)
+      toggles_as_bools=True
+    ) | {
+      'hints_from_cards': [
+        (item.location.address, item.location.player)
+        for item in self.get_progression_hints()
+      ],
+    }
 
   # Called by UT on connection. In UT mode all configuration will come from
   # slot_data rather than via the YAML.

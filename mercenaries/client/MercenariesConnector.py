@@ -44,16 +44,22 @@ class MercenariesConnector:
   def current_chapter(self):
     return self.game.latest_chapter
 
-  def get_new_checks(self, missing: Set[int]):
+  def get_checks_and_hints(self, missing: Set[int], available_hints: List[List[int]]):
     # TODO: this is where missable handling needs to go once it's implemented.
     with self.game.start_location_checks() as ipc:
       found = {
         id for id in missing
         if ipc.is_checked(location_by_id(id))
       }
-      # if found:
-      #   print('found', found)
-      return found
+
+      hints = set()
+      suits = ['clubs', 'diamonds', 'hearts', 'spades']
+      for i in range(3):
+        for rank in range(1, 14):
+          if ipc.is_card_captured(suits[i], rank):
+            hints.add(tuple(available_hints[i*13 + rank-1]))
+
+      return (found, hints)
 
   def get_hintable_checks(self, found: Set[int], missing: Set[int]):
     found = {
