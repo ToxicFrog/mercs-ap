@@ -24,7 +24,6 @@ class MercenariesContext(SuperContext):
   items_handling = 0b111  # fully remote
   want_slot_data = True
   tags = {'AP'}
-  ap_state = {}
   hintables = set()
 
   def __init__(self, server_address: str, slot_name: str, password: str, pine_path: str):
@@ -38,7 +37,6 @@ class MercenariesContext(SuperContext):
     self.debug('Resetting server state.')
     super().reset_server_state()
     self.connector = None
-    self.ap_state = {}
     self.hintables = set()
 
   def make_gui(self):
@@ -83,10 +81,6 @@ class MercenariesContext(SuperContext):
         self.debug('Connected, slot data is: %s', self.slot_data)
         connector = MercenariesConnector(self, self.ipc, self.slot_data)
         asyncio.create_task(self.sync_with_game(connector))
-      case 'SetReply':
-        if 'key' in args and 'value' in args:
-          print(f'Got new ap_state {args['key']} = {args['value']}')
-          self.ap_state[args['key']] = args['value']
 
   async def send_msgs(self, msgs):
     if _MERCS_DEBUG:
@@ -112,13 +106,12 @@ class MercenariesContext(SuperContext):
       ])
     while self.server:
       try:
-        # self.debug('Starting sync iteration')
-        if 'sent_items' not in self.ap_state:
+        if 'sent_items' not in self.stored_data:
           self.debug('Still waiting for state from server.')
           continue
 
         # Send new items
-        old_sent_items = Counter({int(k): v for k,v in self.ap_state['sent_items'].items()})
+        old_sent_items = Counter({int(k): v for k,v in self.stored_data['sent_items'].items()})
         new_sent_items = connector.send_items(self.strip_sent_items(
           self.items_received, old_sent_items))
 
