@@ -26,8 +26,7 @@
   - Capturing a face card or ace should hint a random progression item
   - This needs to be baked into slot_data at generation time
 - Other:
-  - Use Ui_PrintHudMessage to display messages in game if possble
-    - Possible hooks: DebugSkipToMission, Tooltip_Debug, ConTooltip_Debug, util_DebugStartMissionChainLoading
+  - Display chat messages in-game?
 
 ## Other notes
 
@@ -459,3 +458,13 @@ r6 = true
 util_PrintDebugMsg(...)
 
 
+
+elif cmd == "ReceivedItems":
+            payload = {
+                'cmd': 'ReceivedItems',
+                'items': [self.item_names.lookup_in_game(item.item) for item in args['items']],
+                'item_ids': [item.item for item in args["items"]],
+                'locations': [self.location_names.lookup_in_slot(location.location, location.player) for location in args['items']],
+                'players': [self.player_names[player.player] for player in args["items"]],
+                'index': args["index"]
+            }

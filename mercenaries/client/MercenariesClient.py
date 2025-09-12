@@ -25,6 +25,7 @@ class MercenariesContext(SuperContext):
   want_slot_data = True
   tags = {'AP'}
   hintables = set()
+  connector: MercenariesConnector = None
 
   def __init__(self, server_address: str, slot_name: str, password: str, pine_path: str):
     super().__init__(server_address, password)
@@ -79,8 +80,40 @@ class MercenariesContext(SuperContext):
       case 'Connected':
         self.slot_data = args.get("slot_data", {})
         self.debug('Connected, slot data is: %s', self.slot_data)
-        connector = MercenariesConnector(self, self.ipc, self.slot_data)
-        asyncio.create_task(self.sync_with_game(connector))
+        self.connector = MercenariesConnector(self, self.ipc, self.slot_data)
+        asyncio.create_task(self.sync_with_game(self.connector))
+
+  def on_print(self, args: dict):
+    super().on_print(args)
+    if self.connector:
+      self.connector.queue_message(args['text'])
+
+  def on_print_json(self, args: dict):
+    super().on_print_json(args)
+    if args.get('type', None) != 'ItemSend':
+      return
+
+    if not self.connector:
+      return
+
+    item = args['item']
+    item_name = self.item_names.lookup_in_game(item.item)
+    source_player = item.player
+    dest_player = args['receiving']
+
+    if dest_player == source_player and dest_player == self.slot:
+      # Found our own item
+      self.connector.queue_message(f'Found {item_name}')
+
+    elif dest_player == self.slot:
+      # Someone else sent us an item
+      source_name = self.player_names[source_player]
+      self.connector.queue_message(f'{source_name} >> {item_name}')
+
+    elif source_player == self.slot:
+      # We sent someone else an item
+      dest_name = self.player_names[dest_player]
+      self.connector.queue_message(f'{dest_name} << {item_name}')
 
   async def send_msgs(self, msgs):
     if _MERCS_DEBUG:
@@ -104,6 +137,7 @@ class MercenariesContext(SuperContext):
       {'cmd': 'Set', 'key': 'sent_items', 'want_reply': True, 'default': {},
         'operations': [{'operation': 'default', 'value': {}}]}
       ])
+    # connector.queue_message('Connection established')
     while self.server:
       try:
         if 'sent_items' not in self.stored_data:

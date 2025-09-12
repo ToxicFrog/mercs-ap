@@ -127,7 +127,7 @@ class MercenariesConnector:
       # This should never go negative, but weird things can happen...
       total_intel = max(0, total_intel - target_intel * (chapter-1))
 
-    print(f'converge_intel: chapter={chapter} suit={suit} total={total_intel} target={target_intel}')
+    # print(f'converge_intel: chapter={chapter} suit={suit} total={total_intel} target={target_intel}')
     self.game.set_intel(total_intel, target_intel)
 
   def send_once(self, items):
