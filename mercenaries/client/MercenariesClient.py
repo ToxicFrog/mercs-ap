@@ -90,30 +90,42 @@ class MercenariesContext(SuperContext):
 
   def on_print_json(self, args: dict):
     super().on_print_json(args)
-    if args.get('type', None) != 'ItemSend':
-      return
 
     if not self.connector:
       return
 
-    item = args['item']
+    match args.get('type', None):
+      case 'ItemSend':
+        self.on_print_item_send(**args)
+      case 'Chat':
+        self.on_print_chat(**args)
+      case 'ServerChat':
+        self.on_print_chat(**args)
+
+  def on_print_item_send(self, item, receiving, **kwargs):
     item_name = self.item_names.lookup_in_game(item.item)
     source_player = item.player
-    dest_player = args['receiving']
 
-    if dest_player == source_player and dest_player == self.slot:
+    if receiving == source_player and receiving == self.slot:
       # Found our own item
       self.connector.queue_message(f'Found {item_name}')
 
-    elif dest_player == self.slot:
+    elif receiving == self.slot:
       # Someone else sent us an item
       source_name = self.player_names[source_player]
       self.connector.queue_message(f'{source_name} >> {item_name}')
 
     elif source_player == self.slot:
       # We sent someone else an item
-      dest_name = self.player_names[dest_player]
+      dest_name = self.player_names[receiving]
       self.connector.queue_message(f'{dest_name} << {item_name}')
+
+  def on_print_chat(self, message, slot=None, **kwargs):
+    if slot:
+      sender = self.player_names[slot]
+      self.connector.queue_message(f'<{sender}> {message}')
+    else:
+      self.connector.queue_message(f'<*> {message}')
 
   async def send_msgs(self, msgs):
     if _MERCS_DEBUG:

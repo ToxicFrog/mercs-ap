@@ -2,9 +2,11 @@
 
 ## TODO
 
+Items marked with a ! are things I want to have working before alpha.
+
 - Checks:
   - Number of bounties
-    - Option to set point beyond which there will be no progression items
+    - ! Option to set point beyond which there will be no progression items
   - Number of unique vehicles destroyed, and/or specific vehicle types
     - Need to map out which types belong to which array slots
     - Need to also evaluate which vehicles are available when so we can set
@@ -12,21 +14,17 @@
   - See if either the vehicle stats approach or the bounty stats approach works for
     challenge completions, vehicles driven, weapons found
 - Items:
-  - Generic discount
+  - ! Generic discount
     - Applies to your most expensive item
   - Faction reputation bonuses
     - Probably needs more code injection
-  - Faction floor increases
-    - Can be done with K-hacking on AttemptFactionMoodClamp, assuming it gets called often enough
   - Stuff that needs more research to see if it's possible:
     - Airstrike coupons
     - Resource refills
 - Hints:
-  - Capturing a number card should hint a random useful (or filler if no useful) item
-  - Capturing a face card or ace should hint a random progression item
-  - This needs to be baked into slot_data at generation time
-- Other:
-  - Display chat messages in-game?
+  - ! Capturing a number card should hint a random useful (or filler if no useful) item
+  - ! Capturing a face card or ace should hint a random progression item
+  - ! This needs to be baked into slot_data at generation time
 
 ## Other notes
 

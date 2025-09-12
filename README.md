@@ -76,14 +76,12 @@ Some of these are speculative, and depend on reverse engineering I haven't done
 yet to figure out if they're viable; this is a wishlist, not a roadmap.
 
 - New checks:
-  - Bounties: Listening posts, national treasures, blueprints, and monuments
   - Mission bonus objectives
   - Challenges
   - Vehicles driven/destroyed catalogue entries
 - New items:
   - Shop coupons
   - Reputation bonuses
-  - Reputation floor increases
   - Character skins
   - Health/ammo/grenade refills
 - Improved logic:
