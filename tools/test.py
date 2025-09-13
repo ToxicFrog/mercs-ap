@@ -42,6 +42,8 @@ for label,base in [
   # print('indexes', [pcsx2.peek16(base+i*2) for i in range(8)])
   # print('pointers', ['%08X' % pcsx2.peek32(0xda38c0 + pcsx2.peek16(base+i*2)) for i in range(8)])
 
+sys.exit(0)
+
 for addr in range(0x530000, 0x5a5a20+8192, 4):
   n = pcsx2.peekf32(addr)
   if n > 0 and int(n) == n and n in {4,2,6}:

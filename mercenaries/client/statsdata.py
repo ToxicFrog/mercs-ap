@@ -13,6 +13,9 @@ BOUNTY_IDX_ADDRS = {
 
 # This is a lot simpler: it's just an array of floats.
 # TODO: figure out what all the vehicle names are.
+# It seems to be fairly finicky about what counts as a "destroy". Inflicting
+# heavy damage on a vehicle that then explodes from burning or splash damage
+# does not count -- you have to deal the killing blow directly.
 VEHICLES_DESTROYED_ADDR = 0x005a7264
 VEHICLE_NAMES = [
   'unknown000',
@@ -58,7 +61,7 @@ VEHICLE_NAMES = [
   'unknown040',
   'unknown041',
   'unknown042',
-  'unknown043',
+  'Control Vehicle',  # Jammer vehicles in Ace of Clubs mission
   'unknown044',
   'unknown045',
   'unknown046',
@@ -81,7 +84,7 @@ VEHICLE_NAMES = [
   'unknown063',
   'unknown064',
   'unknown065',
-  'unknown066',
+  'SA-8 Anti-Air',  # Guarding the jammers in Ace of Clubs
   'unknown067',
   'unknown068',
   'unknown069',
@@ -124,7 +127,7 @@ VEHICLE_NAMES = [
   'unknown106',
   'unknown107',
   'unknown108',
-  'Baggage Carrier',
+  'Baggage Carrier',  # Think I blew one up in china-occupied airport in chapter 1
   'unknown110',
   'unknown111',
   'unknown112',
@@ -132,7 +135,7 @@ VEHICLE_NAMES = [
   'unknown114',
   'unknown115',
   'unknown116',
-  'BTR APC',
+  'BTR APC',  # Can be found occasionally in chapter 1
   'unknown118',
   'unknown119',
   'unknown120',
@@ -170,7 +173,7 @@ VEHICLE_NAMES = [
   'unknown152',
   'unknown153',
   'unknown154',
-  'unknown155',
+  'MD-500 Scout',  # Common lightly armed helicopter, but you need to blow it up midair, shooting it down doesn't count
   'unknown156',
   'unknown157',
   'unknown158',
