@@ -18,6 +18,13 @@ class PDAStats:
       if count() > 0
     }
 
+  def vehicles_destroyed_count(self):
+    return {
+      VEHICLE_NAMES[idx]: count()
+      for idx,count in enumerate(self.destruction)
+      if count() > 0
+    }
+
   def read_bounty_count(self, idx):
     if idx == 0:
       return 0

@@ -17,10 +17,12 @@ print(pcsx2.game_info())
 # NTs: 502296..29e?
 
 from .stats import PDAStats
+from .statsdata import VEHICLE_NAMES, VEHICLES_DESTROYED_ADDR
 
-stats = PDAStats(pcsx2)
-print(stats.vehicles_destroyed())
-print(stats.bounties_found())
+for idx,name in enumerate(VEHICLE_NAMES):
+  n = pcsx2.peekf32(VEHICLES_DESTROYED_ADDR + idx*4)
+  if n > 0:
+    print(f'{idx:4d} {name:16s} {int(n):4d}')
 
 def readCollectableCount(addr):
   idx = pcsx2.peek16(addr)
@@ -36,9 +38,14 @@ for label,base in [
   ('PM', 0x502202),
   ('NT', 0x502294),
 ]:
-  print(f'{label} ${base:08X} {[readCollectableCount(base+i*2) for i in range(8)]}')
+  print(f'{label} ${base:08X} {[readCollectableCount(base+i*2) for i in range(-8,16)]}')
   # print('indexes', [pcsx2.peek16(base+i*2) for i in range(8)])
   # print('pointers', ['%08X' % pcsx2.peek32(0xda38c0 + pcsx2.peek16(base+i*2)) for i in range(8)])
+
+for addr in range(0x530000, 0x5a5a20+8192, 4):
+  n = pcsx2.peekf32(addr)
+  if n > 0 and int(n) == n and n in {4,2,6}:
+    print(f'{addr:08X} {n}')
 
 sys.exit(0)
 

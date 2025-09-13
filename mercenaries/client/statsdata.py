@@ -124,7 +124,7 @@ VEHICLE_NAMES = [
   'unknown106',
   'unknown107',
   'unknown108',
-  'unknown109',
+  'Baggage Carrier',
   'unknown110',
   'unknown111',
   'unknown112',
