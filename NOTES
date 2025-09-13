@@ -468,3 +468,71 @@ elif cmd == "ReceivedItems":
                 'players': [self.player_names[player.player] for player in args["items"]],
                 'index': args["index"]
             }
+
+
+Free airstrike addresses -- these are not consistent across runs, we need to find
+pointers to them.
+01A4F424 -- tank busters in ace of clubs
+01A4F764 -- cluster bombs in ace of clubs
+01A4DBE4 -- tank buster from earlier save file -- cluster bomb is at the same offset relative to it!
+
+These are populated by AddSupport:
+  [Node$01A2F014] 'AddSupport' [h=ECAE1471,$0099CE00]: function$00993F40 'AddSupport' [h=ECAE1471,$0099CE00]
+    CONST$009EB780 k0  'mission_AddSupport' [h=EEFD8C7C,$00A2A540]
+    CONST$009EB788 k1  'template_support_tankbuster' [h=80AC0C95,$009D1180]
+    CONST$009EB790 k2  TObject(4.0)
+    CONST$009EB798 k3  'template_support_clusterbomb' [h=8CCFE6D7,$00A0CF80]
+    CONST$009EB7A0 k4  'Event_RelativeTimer' [h=AD23F6E2,$009F7840]
+    CONST$009EB7A8 k5  'InitialBlips' [h=40D957D3,$00996480]
+    CONST$009EB7B0 k6  'b' [h=00000083,$00983380]
+    CONST$009EB7B8 k7  TObject(0.5)
+     CODE$00A860C0
+      000 00000005 GETGLOBAL r0 := _G[k0 ('mission_AddSupport' [h=EEFD8C7C,$00A2A540])]
+      001 0101000A  NEWTABLE r1 := {} (#a=2, #h=0)
+      002 0201000A  NEWTABLE r2 := {} (#a=2, #h=0)
+      003 03000041     LOADK r3 := k1 ('template_support_tankbuster' [h=80AC0C95,$009D1180])
+      004 04000081     LOADK r4 := k2 (TObject(4.0))
+      005 0200005F   SETLIST r2 [1]
+      006 0301000A  NEWTABLE r3 := {} (#a=2, #h=0)
+      007 040000C1     LOADK r4 := k3 ('template_support_clusterbomb' [h=8CCFE6D7,$00A0CF80])
+      008 05000081     LOADK r5 := k2 (TObject(4.0))
+      009 0300005F   SETLIST r3 [1]
+      010 0100005F   SETLIST r1 [1]
+      011 00010059      CALL r0 (1 args) => 0 results
+      012 00000105 GETGLOBAL r0 := _G[k4 ('Event_RelativeTimer' [h=AD23F6E2,$009F7840])]
+      013 01000141     LOADK r1 := k5 ('InitialBlips' [h=40D957D3,$00996480])
+      014 02000181     LOADK r2 := k6 ('b' [h=00000083,$00983380])
+      015 030001C1     LOADK r3 := k7 (TObject(0.5))
+      016 00020059      CALL r0 (3 args) => 0 results
+      017 0000801B    RETURN
+
+Which calls mission_AddSupport:
+  [Node$01A2F0F0] 'mission_AddSupport' [h=EEFD8C7C,$00A2A540]: function$00975FA0 'mission_AddSupport' [h=EEFD8C7C,$00A2A540]
+    CONST$009DA840 k0  'type' [h=0070EF71,$009875A0]
+    CONST$009DA848 k1  'table' [h=10F2114B,$0098D780]
+    CONST$009DA850 k2  'Support_AddItem' [h=E53E40DA,$0098F7E0]
+    CONST$009DA858 k3  TObject(1.0)
+    CONST$009DA860 k4  TObject(2.0)
+     CODE$00B1FE40
+      000 00000018      TEST not r0 : r0 := r0
+      001 00800454       JMP +18 ; 20
+      002 01000000      MOVE r1 := r0
+      003 02020003   LOADNIL r2 ... r4
+      004 0180031E  TFORPREP WIP
+      005 05000005 GETGLOBAL r5 := _G[k0 ('type' [h=0070EF71,$009875A0])]
+      006 06020000      MOVE r6 := r4
+      007 05010099      CALL r5 (1 args) => 1 results
+      008 0002BED5        EQ r5 != k1 ('table' [h=10F2114B,$0098D780])
+      009 00800114       JMP +5 ; 15
+      010 05000085 GETGLOBAL r5 := _G[k2 ('Support_AddItem' [h=E53E40DA,$0098F7E0])]
+      011 06023F46  GETTABLE r6 := r4[k3 (TObject(1.0))]
+      012 07023F86  GETTABLE r7 := r4[k4 (TObject(2.0))]
+      013 05018059      CALL r5 (2 args) => 0 results
+      014 00800094       JMP +3 ; 18
+      015 05000085 GETGLOBAL r5 := _G[k2 ('Support_AddItem' [h=E53E40DA,$0098F7E0])]
+      016 06020000      MOVE r6 := r4
+      017 05010059      CALL r5 (1 args) => 0 results
+      018 0100005D  TFORLOOP WIP
+      019 007FFC14       JMP -15 ; 5
+      020 0000801B    RETURN
+
