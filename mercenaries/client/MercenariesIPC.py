@@ -27,7 +27,7 @@ from contextlib import contextmanager
 from typing import List
 
 from .deck import DeckOf52
-from .lua import GCObject, Lua_TObject, LUA_TNUMBER, LUA_TSTRING
+from .lua import GCObject, Lua_TObject, LUA_TNUMBER, LUA_TSTRING, LUA_TBOOL
 from .lopcode import LuaOpcode
 from .patch import patch
 from .pine import Pine
@@ -76,7 +76,6 @@ class MercenariesIPC:
   def clear_handles(self):
     self.L_ptr = None
     self.intel_total = None
-    self.missions = None
     self.shop_txn = 0
 
   def inject(self, L_ptr):
@@ -171,9 +170,9 @@ class MercenariesIPC:
       L = GCObject(self.pine, self.L_ptr)
       missions = L.getglobal('mission_accepted').val()
       self.mission_cache = {
-        faction: missions.getfield(faction).val
+        faction: missions.getfield(faction).val()
         for faction in ['allies', 'china', 'mafia', 'sk']
-        if self.missions is not None
+        if missions is not None
       }
     except KeyError:
       self.mission_cache = {}
@@ -202,8 +201,8 @@ class MercenariesIPC:
   def is_card_captured(self, suit, rank):
     return self.card_cache[suit][rank-1] > 2
 
-  def is_mission_complete(self, faction: str, mission) -> bool:
-    return mission < self.mission_cache.get('faction', 0)
+  def is_mission_complete(self, faction: str, mission: int) -> bool:
+    return mission < self.mission_cache.get(faction, 0)
 
   def is_bounty_collected(self, type: str, count: int) -> bool:
     return self.bounty_cache[type] >= count
@@ -232,9 +231,9 @@ class MercenariesIPC:
       # In practical terms, just by how much text we can fit on screen, this is
       # probably limited to about 50 cols.
       self.message_buffer.val().set_string(message)
-      self.message_flag.set(True)
+      self.message_flag.set(True, tt=LUA_TBOOL)
     else:
-      self.message_flag.set(False)
+      self.message_flag.set(False, tt=LUA_TBOOL)
 
     self.debug_flag.set(True)
     return True
