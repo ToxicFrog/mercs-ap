@@ -228,7 +228,9 @@ class Lua_GCString(Lua_GCObject):
 
   def set_string(self, buf: str):
     buf = buf.encode() + b'\0'
-    assert len(buf) <= self.max_size, f'Cannot exceed size of existing string table entry overwriting {self}'
+    # assert len(buf) <= self.max_size, f'Cannot exceed size of existing string table entry overwriting {self}'
+    if len(buf) > self.max_size:
+      buf = buf[0:self.max_size-1] + b'\0'
     self.size = len(buf)
     self.pine.poke32(self.addr+12, self.size)
     self.pine.writemem(self.addr+16, buf)
