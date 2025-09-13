@@ -105,7 +105,7 @@ class MercenariesConnector:
     # may have unlocked new items in-game and we need to override that!
     unlock_list = []
     by_tag = {}
-    for item in items:
+    for item in (i for i in items if 'progression' in i.groups()):
       if item.tag in by_tag:
         by_tag[item.tag][1] += 1
       else:
@@ -113,7 +113,9 @@ class MercenariesConnector:
         unlock_list.append(unlock)
         by_tag[item.tag] = unlock
 
-    self.game.set_unlocked_shop_items(unlock_list, 1.0 - self.options['shop_discount_percent']/100)
+    self.game.set_unlocked_shop_items(
+      unlock_list, [i for i in items if 'filler' in i.groups()],
+      1.0 - self.options['shop_discount_percent']/100)
 
   def converge_intel_items(self, items):
     # This is fully idempotent and is a single call to setk() in practice so we

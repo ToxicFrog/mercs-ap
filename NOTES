@@ -4,6 +4,16 @@
 
 Items marked with a ! are things I want to have working before alpha.
 
+- ! Fixes:
+  - Bounty tracking sometimes doesn't update until...something. I save and load?
+    I collect the next bounty? It would be nice if I could find out where it's
+    really stored.
+  - Better error recovery. In particular, talking to the game while transiting
+    scenes and stuff tends to break in ways that aren't IPCError because it's
+    reading corrupted memory. We need to safely back out and retry when that happens.
+  - Generic discounts shouldn't apply to the cheat weapons crate, or there should
+    be a limit of one discount per slot, or something, because otherwise it attracts
+    every generic discount you find into a singularity of savings
 - Checks:
   - Number of unique vehicles destroyed, and/or specific vehicle types
     - Need to map out which types belong to which array slots
@@ -12,17 +22,11 @@ Items marked with a ! are things I want to have working before alpha.
   - See if either the vehicle stats approach or the bounty stats approach works for
     challenge completions, vehicles driven, weapons found
 - Items:
-  - ! Generic discount
-    - Applies to your most expensive item
   - Faction reputation bonuses
     - Probably needs more code injection
   - Stuff that needs more research to see if it's possible:
     - Airstrike coupons
     - Resource refills
-- Hints:
-  - ! Capturing a number card should hint a random useful (or filler if no useful) item
-  - ! Capturing a face card or ace should hint a random progression item
-  - ! This needs to be baked into slot_data at generation time
 
 ## Other notes
 

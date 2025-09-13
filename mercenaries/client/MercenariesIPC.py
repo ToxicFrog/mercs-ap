@@ -238,7 +238,7 @@ class MercenariesIPC:
     self.debug_flag.set(True)
     return True
 
-  def set_unlocked_shop_items(self, items: List[List[int]], discount_factor: float):
+  def set_unlocked_shop_items(self, items: List[List[int]], discounts: List, discount_factor: float):
     '''
     Sets the unlocked shop items to match the given list.
 
@@ -253,7 +253,7 @@ class MercenariesIPC:
     self.validate()
 
     # Number of distinct shop unlocks found in AP
-    txn = sum(item[1] for item in items)
+    txn = sum(item[1] for item in items) + len(discounts)
     # Number of actual unlocks that turns into once duplicates are merged
     ap_count = len(items)
     # Number of unlocks the player has in-game.
@@ -263,9 +263,9 @@ class MercenariesIPC:
       # Either:
       # - the player has found a new unlock in-game we need to re-lock;
       # - the player has received a new unlock through AP; or
-      # - the player has received a duplicate unlock and we need to apply a discount
+      # - the player has received a duplicate unlock or coupon and we need to apply a discount
       print(f'Updating shop items (game: count={game_count}, txn={self.shop_txn}; ap: count={ap_count}, txn={txn})')
-      self.shop.set_unlocks(items, discount_factor)
+      self.shop.set_unlocks(items, discounts, discount_factor)
       self.shop_txn = txn
 
   def set_intel(self, amount, target):

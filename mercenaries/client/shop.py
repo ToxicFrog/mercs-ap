@@ -35,15 +35,36 @@ class MafiaShop:
     self.airstrike_count(sum(1 for id in unlocks if UNLOCKS[id].type == 'airstrike'))
     self.unlock_count(len(unlocks))
 
-  def set_unlocks(self, unlocks: List[List[int]], discount_factor: float):
+  def apply_discount_coupons(self, contents, discounts):
+    # Best discount at end so we can pop() it
+    discounts = sorted(discounts, key=lambda x: x.discount)
+    while len(discounts) > 0:
+      contents = sorted(contents, key=lambda x: x[1], reverse=True)
+      discount = discounts.pop()
+      contents[0][1] = floor(contents[0][1] * (discount.discount/100))
+
+  def set_unlocks(self, unlocks: List[List[int]], discounts: List, discount_factor: float):
     old_count = self.unlock_count()
     self.unlock_count(0)
 
+    shop_contents = []
+
+    # Generate a list of shop entries in order of discovery, with discounts from
+    # duplicate items factored in.
     for idx, (tag, count) in enumerate(unlocks):
       price = max(1, floor(UNLOCKS[tag].price * (discount_factor ** (count-1))))
       if idx >= old_count or self.unlocks[idx].tag() != tag:
-        print(f'+ {UNLOCKS[tag].name} ${UNLOCKS[tag].price:,d}')
-        self.unlocks[idx].new(1)
+        shop_contents.append([tag, price, True])
+      else:
+        shop_contents.append([tag, price, False])
+
+    self.apply_discount_coupons(shop_contents, discounts)
+
+    for idx,[tag, price, new] in enumerate(shop_contents):
       self.unlocks[idx].tag(tag)
       self.unlocks[idx].price(price)
+      if new:
+        print(f'+ {UNLOCKS[tag].name} ${UNLOCKS[tag].price:,d}')
+        self.unlocks[idx].new(1)
+
     self.update_counts([unlock[0] for unlock in unlocks])

@@ -7,21 +7,31 @@ PS2 game *Mercenaries: Playground of Destruction*.
 
 ### Checks
 
-Completing missions and verifying members of the Deck of 52 will count as AP checks. Collecting bounties will also produce checks, with the number of bounties needed per check configurable in the yaml.
+Completing missions and verifying members of the Deck of 52 will count as AP
+checks. Collecting bounties will also produce checks, with the number of
+bounties needed per check configurable in the yaml.
 
-In all cases, the vanilla monetary and faction rewards are left intact; the AP check replaces the shop unlock or Ace intel you would normally get.
+In all cases, the vanilla monetary and faction rewards are left intact; the AP
+check replaces the shop unlock or Ace intel you would normally get.
 
 ### Items
 
-Progression items are Ace intel -- which can be configured to be suited or progressive, and to use the vanilla intel amounts or a fixed number of 'intel tokens' per Ace -- and Merchant of Menace unlocks. Duplicate shop unlocks act as a stacking discount for the item in question.
+Progression items are Ace intel -- which can be configured to be suited or
+progressive, and to use the vanilla intel amounts or a fixed number of 'intel
+tokens' per Ace -- and Merchant of Menace unlocks. Duplicate shop unlocks act as
+a stacking discount for the item in question.
 
-Filler items are cash bonuses (ranging from $50k to $500k) and permanent faction reputation increases (with diminishing returns).
+Filler items are cash bonuses (ranging from $50k to $500k), permanent faction
+reputation increases (with diminishing returns), and shop discounts (10% to 30%,
+automatically applied to your most expensive item).
 
 ### Hints
 
-Completing a mission that gives in-game hints about the location of a Number will also give an AP hint for what item that Number is carrying.
+Completing a mission that gives in-game hints about the location of a Number
+will also give an AP hint for what item that Number is carrying.
 
-Capturing a Card alive will give you a hint for a random progression item, either someone else's in your world, or one of yours in someone else's world.
+Capturing a Card alive will give you a hint for a random progression item,
+either someone else's in your world, or one of yours in someone else's world.
 
 
 ## Setup
@@ -79,7 +89,6 @@ yet to figure out if they're viable; this is a wishlist, not a roadmap.
   - Challenges
   - Vehicles driven/destroyed catalogue entries
 - New items:
-  - "Floating" shop discounts
   - Shop coupons
   - Character skins
   - Health/ammo/grenade refills

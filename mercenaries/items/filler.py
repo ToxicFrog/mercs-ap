@@ -44,6 +44,25 @@ class ReputationItem(NamedTuple):
     return {'reputation', 'filler'}
 
 
+class DiscountItem(NamedTuple):
+  id: int
+  weight: int
+  discount: int
+
+  def name(self):
+    return f'{self.discount}% Off'
+
+  def count(self, options):
+    return self.weight
+
+  def classification(self):
+    return ItemClassification.filler
+
+  def groups(self):
+    return {'shop', 'filler'}
+
+
+
 FILLER = {
   # Weights are based on how many of these are in the vanilla reward pool
   # x2 so money is a bit more common than reputation bonuses, about 6:1
@@ -55,4 +74,7 @@ FILLER = {
   ReputationItem(next_id(), 1, 'Mafia'),
   ReputationItem(next_id(), 1, 'China'),
   ReputationItem(next_id(), 1, 'SK'),
+  DiscountItem(next_id(), 4, 10),
+  DiscountItem(next_id(), 2, 20),
+  DiscountItem(next_id(), 1, 30),
 }
