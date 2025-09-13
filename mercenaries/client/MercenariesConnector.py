@@ -52,6 +52,16 @@ class MercenariesConnector:
         if ipc.is_checked(location_by_id(id))
       }
 
+      # Locations that the player did not but which are now uncollectable due
+      # to being removed from the map after finishing a chapter.
+      # TODO: is there some way we can force them to respawn? A lot of that
+      # seems to be controlled from lua...
+      missed = {
+        id for id in missing
+        if id not in found
+        and ipc.is_missed(location_by_id(id))
+      }
+
       hints = set()
       suits = ['clubs', 'diamonds', 'hearts', 'spades']
       for i in range(3):
@@ -59,7 +69,7 @@ class MercenariesConnector:
           if ipc.is_card_captured(suits[i], rank):
             hints.add(tuple(available_hints[i*13 + rank-1]))
 
-      return (found, hints)
+      return (found | missed, hints)
 
   def get_hintable_checks(self, found: Set[int], missing: Set[int]):
     found = { location_by_id(id).short_name() for id in found }

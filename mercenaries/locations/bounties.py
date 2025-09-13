@@ -56,6 +56,10 @@ class BountyLocation(NamedTuple):
   def is_checked(self, game):
     return game.is_bounty_collected(self.type, self.count)
 
+  def is_missed(self, game):
+    # You can always backtrack to ones you skipped.
+    return False
+
   def is_hintable(self, found):
     # TODO: maybe the unused mission hints should provide hints for progression
     # items found in the bounty sequences?

@@ -192,6 +192,7 @@ class MercenariesIPC:
       self.end_location_checks()
 
   def end_location_checks(self):
+    assert self.doing_location_checks
     self.doing_location_checks = False
     self.bounty_cache = None
     self.mission_cache = None
@@ -201,16 +202,24 @@ class MercenariesIPC:
     assert self.doing_location_checks
     return location.is_checked(self)
 
+  def is_missed(self, location):
+    assert self.doing_location_checks
+    return location.is_missed(self)
+
   def is_card_verified(self, suit, rank):
+    assert self.doing_location_checks
     return self.card_cache[suit][rank-1] > 1
 
   def is_card_captured(self, suit, rank):
+    assert self.doing_location_checks
     return self.card_cache[suit][rank-1] > 2
 
   def is_mission_complete(self, faction: str, mission: int) -> bool:
+    assert self.doing_location_checks
     return mission < self.mission_cache.get(faction, 0)
 
   def is_bounty_collected(self, type: str, count: int) -> bool:
+    assert self.doing_location_checks
     return self.bounty_cache[type] >= count
 
   def send_once(self, money: int = 0, message: str = ''):

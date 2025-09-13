@@ -14,6 +14,11 @@ bounties needed per check configurable in the yaml.
 In all cases, the vanilla monetary and faction rewards are left intact; the AP
 check replaces the shop unlock or Ace intel you would normally get.
 
+Missable checks (most non-Ace cards and missions) will be auto-released at the
+end of their corresponding chapter, so rushing for the Ace early once you have
+enough intel and firepower is a viable strategy and will not lock you out of
+chapter-specific checks.
+
 ### Items
 
 Progression items are Ace intel -- which can be configured to be suited or

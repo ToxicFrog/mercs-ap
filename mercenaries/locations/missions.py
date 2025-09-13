@@ -48,6 +48,11 @@ class MissionLocation(NamedTuple):
       {'A': 'allies', 'K': 'sk', 'M': 'mafia', 'C': 'china'}[self.faction],
       self.rank)
 
+  def is_missed(self, game):
+    # Missions are auto-cleared when you finish their chapter if you did not
+    # clear them yourself.
+    return False
+
   def is_hintable(self, found):
     return False
 
