@@ -105,7 +105,7 @@ class MercenariesContext(SuperContext):
         self.on_print_chat(**args)
 
   def on_print_item_send(self, item, receiving, **kwargs):
-    item_name = self.item_names.lookup_in_game(item.item)
+    item_name = self.item_names.lookup_in_slot(item.item, receiving)
     source_player = item.player
 
     if receiving == source_player and receiving == self.slot:
