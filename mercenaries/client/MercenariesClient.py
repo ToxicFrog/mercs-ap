@@ -4,6 +4,7 @@ import os
 
 from CommonClient import logger
 
+from .lua import LuaTypeError
 from .MercenariesIPC import MercenariesIPC, IPCError
 from .MercenariesConnector import MercenariesConnector
 
@@ -199,9 +200,12 @@ class MercenariesContext(SuperContext):
         if connector.current_chapter() > self.slot_data['goal']:
           self.finished_game = True
 
-      except IPCError:
-        self.debug('IPC error, sleeping')
+      except (IPCError, LuaTypeError):
+        # self.debug('IPC error, sleeping')
         await asyncio.sleep(4)
+      except Exception as e:
+        self.debug(f'Unexpected error talking to the game: {e}')
+        await asyncio.sleep(9)
       finally:
         await asyncio.sleep(1)
     self.debug('Game sync exiting.')

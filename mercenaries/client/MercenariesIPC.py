@@ -59,9 +59,15 @@ class MercenariesIPC:
     # If the latter check fails, we need to reinitialize our pointers and code
     # injections.
     if self.pine.peek32(self.pine.peek32(0x005007f4) + 0x74) > 8:
+      # Player model index. Only 0-8 are "normal" gameplay models.
       raise IPCError('Game is between scenes')
     if self.pine.peek32(0x005131e0) == 0:
+      # Set to 1 in normal play, 0 in cutscenes.
       raise IPCError('Player is not in control')
+    if self.pine.peek64(0x00558b10) == 0:
+      # Two 4-byte flags, first is 1 if the player is on foot, second is 1 if
+      # they're in a vehicle, if they're both 0 who knows what's happening?
+      raise IPCError('Player is in an unknown state')
     if self.get_map() in {'menu', 'unknown'}:
       raise IPCError('Not in normal map')
     ptr = self.pine.peek32(0x00501a44)
@@ -106,8 +112,8 @@ class MercenariesIPC:
         # Stuff we need to wiggle later
         'bDebugOutput': L.getglobal('bDebugOutput'),
       }
-    except KeyError:
-      raise IPCError('lua_State is still initializing')
+    except KeyError as e:
+      raise IPCError(f'lua_State is still initializing: {e}')
 
     (
       self.intel_total,
