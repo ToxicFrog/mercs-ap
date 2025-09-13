@@ -135,7 +135,7 @@ class MercenariesIPC:
     # rdraclubs, rdrAdmnd, rdrAHeart, rdrAspade -- ace missions
     # rdrSWN -- tutorial
     # rdrcddn -- credits/menu
-    radar = self.pine.readmem(0x004a40e8, 8)
+    radar = self.pine.readmem(0x004a40e8, 8) + b'\0'
     match radar[:radar.find(0)]:
       case b'rdrcddn': return 'menu'
       case b'rdrSW': return 'SK'
