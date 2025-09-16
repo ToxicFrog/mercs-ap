@@ -131,6 +131,11 @@ class MercenariesConnector:
     # This is fully idempotent and is a single call to setk() in practice so we
     # just do it unconditionally each time.
     chapter = self.current_chapter()
+    if chapter < 1:
+      # Haven't figured out what chapter the player is in yet, can't usefully
+      # assign intel.
+      return
+
     suit = ['clubs', 'diamonds', 'hearts', 'spades'][chapter-1]
     total_intel = sum(
       item.intel_amount() for item in items
@@ -146,7 +151,6 @@ class MercenariesConnector:
       # This should never go negative, but weird things can happen...
       total_intel = max(0, total_intel - target_intel * (chapter-1))
 
-    # print(f'converge_intel: chapter={chapter} suit={suit} total={total_intel} target={target_intel}')
     self.game.set_intel(total_intel, target_intel)
 
   def converge_reputation_items(self, items):
