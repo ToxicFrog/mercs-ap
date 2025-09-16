@@ -6,6 +6,9 @@ from ..id import next_id
 
 
 class MoneyItem(NamedTuple):
+  '''
+  A one-time cash bonus for the player.
+  '''
   id: int
   weight: int
   amount: int
@@ -24,6 +27,12 @@ class MoneyItem(NamedTuple):
 
 
 class ReputationItem(NamedTuple):
+  '''
+  A reputation floor adjustment. The first two adjust the floor to -50 (faction
+  will no longer withdraw missions or be shoot-on-sight to you) and then 0
+  (faction will always be at least "neutral"). Subsequent adjusters give
+  incremental bonuses to the floor, with diminishing returns.
+  '''
   id: int
   weight: int
   faction_name: str
@@ -45,12 +54,18 @@ class ReputationItem(NamedTuple):
 
 
 class DiscountItem(NamedTuple):
+  '''
+  A floating discount that applies to whatever the most expensive item in the
+  shop is. Multiple discounts can stack but once enough have stacked that the
+  item in question is no longer the most expensive, they'll start applying to
+  something else.
+  '''
   id: int
   weight: int
   discount: int
 
   def name(self):
-    return f'{self.discount}% Off'
+    return f'{self.discount}% discount'
 
   def count(self, options):
     return self.weight
