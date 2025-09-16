@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import NamedTuple, Set
 
 from BaseClasses import CollectionState, Item, ItemClassification, Location, MultiWorld, Region, Tutorial, LocationProgressType
 
@@ -77,8 +77,35 @@ class DiscountItem(NamedTuple):
     return {'shop', 'filler'}
 
 
+class CouponItem(NamedTuple):
+  '''
+  A coupon for a free Merchant of Menace delivery. Only applies to things you
+  already have unlocked (due to technical difficulties). Come in generic "by
+  item category" and "by faction" versions and give you a random thing from that
+  faction/category.
+  '''
+  id: int
+  weight: int
+  title: str
+  compatible: Set[str]
 
-FILLER = {
+  def name(self):
+    return f'Free {self.title}'
+
+  def count(self, options):
+    return self.weight
+
+  def classification(self):
+    return ItemClassification.filler
+
+  def groups(self):
+    return {'shop', 'filler'}
+
+  def applies_to(self, shop_item):
+    return shop_item.groups() & self.compatible
+
+
+FILLER = [
   # Money bonuses, using the vanilla proportions for listening posts and monuments,
   # dropping the $3k bonuses for  BPs/treasures, and rearranging the bounty milestone
   # bonuses so the most valuable ones are also the rarest.
@@ -98,7 +125,15 @@ FILLER = {
   DiscountItem(next_id(), 16, 10), # Worth about 45k, in the endgame, with diminishing returns
   DiscountItem(next_id(), 8, 20), # 90k
   DiscountItem(next_id(), 4, 30), # 135k
-}
+  # And these
+  CouponItem(next_id(), 8, 'airstrike', {'airstrike'}),
+  CouponItem(next_id(), 8, 'supply drop', {'supplies'}),
+  CouponItem(next_id(), 8, 'vehicle', {'vehicle'}),
+  CouponItem(next_id(), 8, 'Allied item', {'allies'}),
+  CouponItem(next_id(), 8, 'Chinese item', {'china'}),
+  CouponItem(next_id(), 8, 'Mafia item', {'mafia'}),
+  CouponItem(next_id(), 8, 'Korean item', {'sk', 'nk'}),
+]
 
 '''
 Filler proportions in the main game
