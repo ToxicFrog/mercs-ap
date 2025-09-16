@@ -1,8 +1,8 @@
 from math import floor
 from typing import NamedTuple, List
 
+from ..data.shopdata import *
 from .pine import Pine
-from .shopdata import *
 from .util import MemVarInt, MemVarArray
 
 class ShopUnlock(NamedTuple):

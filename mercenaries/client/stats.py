@@ -1,5 +1,5 @@
+from ..data.statsdata import *
 from .pine import Pine
-from .statsdata import *
 from .util import MemVarFloat, MemVarArray, MemVarInt16
 
 class PDAStats:
