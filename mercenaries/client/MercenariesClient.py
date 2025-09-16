@@ -204,7 +204,9 @@ class MercenariesContext(SuperContext):
         # self.debug('IPC error, sleeping')
         await asyncio.sleep(4)
       except Exception as e:
-        self.debug(f'Unexpected error talking to the game: {e}')
+        import traceback
+        self.debug(f'Unexpected error talking to the game:')
+        self.debug(traceback.format_exc())
         await asyncio.sleep(9)
       finally:
         await asyncio.sleep(1)
