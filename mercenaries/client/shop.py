@@ -39,6 +39,8 @@ class MafiaShop:
     # Best discount at end so we can pop() it
     discounts = sorted(discounts, key=lambda x: x.discount)
     while len(discounts) > 0:
+      # Repeatedly find the most expensive item in the shop, apply a discount
+      # coupon to it, and discard the coupon.
       contents = sorted(contents, key=lambda x: x[1], reverse=True)
       discount = discounts.pop()
       contents[0][1] = floor(contents[0][1] * (discount.discount/100))
@@ -53,7 +55,10 @@ class MafiaShop:
     # duplicate items factored in.
     for idx, (tag, count) in enumerate(unlocks):
       price = max(1, floor(UNLOCKS[tag].price * (discount_factor ** (count-1))))
-      if idx >= old_count or self.unlocks[idx].tag() != tag:
+      # Discounts don't apply to the Cheat Crate.
+      if tag == 0x3D:
+        continue
+      elif idx >= old_count or self.unlocks[idx].tag() != tag:
         shop_contents.append([tag, price, True])
       else:
         shop_contents.append([tag, price, False])
