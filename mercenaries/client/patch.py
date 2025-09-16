@@ -18,6 +18,8 @@ def patch(globals):
     afmc.getk(9), # Money bonus
     afmc.getk(11), # Message buffer
     afmc.getk(13), # Message flag
+    afmc.getk(21), # Support item
+    afmc.getk(22), # Support item flag
     { # Reputation floors
       'allies': afmc.getk(5),
       'china': afmc.getk(6),
@@ -88,20 +90,20 @@ def patch_afmc(globals):
   +   CONST$00C4D880 k8  -100.0 sk mood floor
   +   CONST$00C4D888 k9  0.0 money bonus
   +   CONST$00C4D890 k10 'Ui_PrintHudMessage' ; called, k11 is used as scratch space for the message
-  +   CONST$00C4D898 k11 '[global.lua] AttemptFactionMoodClamp: just finished first mission sequence; unclamping faction mood\n' [h=44BB274C,$00AA23C0]
-      CONST$00C4D8A0 k12 'Utility_WriteNumberToScribbleMemory' [h=DCF55147,$009DC740]
+  +   CONST$00C4D898 k11 '' ; buffer for message display
+  +   CONST$00C4D8A0 k12 'Support_AddItem' ; called, using k21 as argument and k22 as flag
   +   CONST$00C4D8A8 k13 false ; flag indicating that k11 contains a message to emit
   -   CONST$00C4D8B0 k14 'Faction_SetMinimumRelation' [h=4FB36F98,$00A3EC80]
   -   CONST$00C4D8B8 k15 'allies' [h=B57F1C27,$009A61A0]
-      CONST$00C4D8C0 k16 TObject(100.0)
+  +   CONST$00C4D8C0 k16 1 ; number of coupon items to add
       CONST$00C4D8C8 k17 TObject(-100.0)
   -   CONST$00C4D8D0 k18 'china' [h=1129D14E,$009A6060]
   -   CONST$00C4D8D8 k19 'mafia' [h=11226556,$009A6140]
   -   CONST$00C4D8E0 k20 'sk' [h=00001514,$009A6180]
-      CONST$00C4D8E8 k21 '[global.lua] AttemptFactionMoodClamp: within first mission sequence; clamping faction mood\n' [h=7DCC8073,$00A83CC0]
-      CONST$00C4D8F0 k22 TObject(59.0)
+  +   CONST$00C4D8E8 k21 'template_support_*' ; name of support item to add
+  +   CONST$00C4D8F0 k22 false ; "has support item" flag
       CONST$00C4D8F8 k23 TObject(-59.0)
-      CONST$00C4D900 k24 '[global.lua] AttemptFactionMoodClamp: beyond first mission sequence; not clamping faction mood\n' [h=6ABD1F45,$00A760C0]
+  +   CONST$00C4D900 k24 'template_support_*' ; name of support item to remove
 
   The desired behaviour, as lua source, is:
 
@@ -126,6 +128,7 @@ def patch_afmc(globals):
   setmoney_name = globals['Player_SetMoney_name']
   getmoney_name = globals['Player_GetMoney_name']
   hudmessage_name = globals['Ui_PrintHudMessage_name']
+  additem_name = globals['Support_AddItem_name']
 
   with globals['AttemptFactionMoodClamp'].val().lock() as f:
     f.setk(0, sgsa_name, tt=LUA_TSTRING) # To be called
@@ -139,8 +142,12 @@ def patch_afmc(globals):
     f.setk(8, -100.0, tt=LUA_TNUMBER)
     f.setk(9, 0.0, tt=LUA_TNUMBER) # Money bonus
     f.setk(10, hudmessage_name, tt=LUA_TSTRING) # To be called
-    # f.setk(11, "") # message buffer, will be set by caller as needed
+    f.getk(11).val().set_string('') # message contents
+    f.setk(12, additem_name)
     f.setk(13, False, tt=LUA_TBOOL) # "pending message" flag
+    f.setk(16, 1.0, tt=LUA_TNUMBER) # support item count
+    f.getk(21).val().set_string('') # support item name
+    f.setk(22, False, tt=LUA_TBOOL) # support item flag
     f.patch(0, [
       # 00 <k0> gameflow_ShouldGameStateApply()
       LuaOpcode('GETGLOBAL', A=0, Bx=0),
@@ -168,27 +175,46 @@ def patch_afmc(globals):
       LuaOpcode('LOADK', A=1, Bx=20),
       LuaOpcode('LOADK', A=2, Bx=8),
       LuaOpcode('CALL', A=0, B=3, C=1),
+
+      # Check if deliver-once flag is set, if not we have nothing to deliver
+      # and should just return.
       # 20 if not <k2> bDebugOutput then return end
       LuaOpcode('GETGLOBAL', A=0, Bx=2), # from this moment on we keep bDebugOutput in r0
       LuaOpcode('TEST', C=0, B=0, A=0),
       LuaOpcode('JMP', sBx=(77-23)), # 22, so PC is 23, and end of fn is 77
+
+      # Give the player some money.
+      # Call this every time, if bonus is 0 it's a no-op.
       # 23 <k3> Player_SetMoney(<k4> Player_GetMoney() + <k9> money bonus)
-      # bonus may be zero, hopefully that's a no-op?
       LuaOpcode('GETGLOBAL', A=1, Bx=3), # ... setmoney
       LuaOpcode('GETGLOBAL', A=2, Bx=4), # ... setmoney getmoney
       LuaOpcode('CALL', A=2, B=1, C=2),  # ... setmoney $player
       LuaOpcode('LOADK', A=3, Bx=9),     # ... setmoney $player $bonus
       LuaOpcode('ADD', A=2, B=2, C=3),   # ... setmoney $total
       LuaOpcode('CALL', A=1, B=2, C=1),
-      # 29 if not <k13> has_message then return end
+
+      # Output a pending message, if any.
+      # 29 Skip call to PrintDebugMessage if not <k13> has_message
       LuaOpcode('LOADK', A=1, Bx=13),
       LuaOpcode('TEST', C=0, B=0, A=0),
-      LuaOpcode('JMP', sBx=(77-32)), # 31, so PC is 32
+      LuaOpcode('JMP', sBx=3), # 31, so PC=32, jump to 35
       # 32 <k10> Ui_PrintDebugMessage(<k11> message)
       LuaOpcode('GETGLOBAL', A=1, Bx=10),
       LuaOpcode('LOADK', A=2, Bx=11),
       LuaOpcode('CALL', A=1, B=2, C=1),
-      # 35 <k2> bDebugOutput = not bDebugOutput
+
+      # If there's an airstrike coupon queued, grant it
+      # 35 skip if not <k22> has_support_item
+      LuaOpcode('LOADK', A=1, Bx=22),
+      LuaOpcode('TEST', C=0, B=0, A=0),
+      LuaOpcode('JMP', sBx=4), # 37, so PC=38, jump to 42
+      # 38 <k12> Support_AddItem(<k21> support_item)
+      LuaOpcode('GETGLOBAL', A=1, Bx=12),
+      LuaOpcode('LOADK', A=2, Bx=21),
+      LuaOpcode('LOADK', A=3, Bx=16),
+      LuaOpcode('CALL', A=1, B=3, C=1),
+
+      # 42 <k2> bDebugOutput = not bDebugOutput
       LuaOpcode('NOT', A=0, B=0),
       LuaOpcode('SETGLOBAL', A=0, Bx=2),
       # eof

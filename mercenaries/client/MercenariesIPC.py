@@ -109,6 +109,7 @@ class MercenariesIPC:
         'Player_GetMoney_name': L.getglobalnode('Player_GetMoney').k,
         'Player_SetMoney_name': L.getglobalnode('Player_SetMoney').k,
         'Ui_PrintHudMessage_name': L.getglobalnode('Ui_PrintHudMessage').k,
+        'Support_AddItem_name': L.getglobalnode('Support_AddItem').k,
         # Stuff we need to wiggle later
         'bDebugOutput': L.getglobal('bDebugOutput'),
       }
@@ -119,7 +120,9 @@ class MercenariesIPC:
       self.intel_total,
       self.money_bonus,
       self.message_buffer,
-      self.message_flag,
+      self.has_message,
+      self.support_item,
+      self.has_support_item,
       self.reputation_floors,
     ) = patch(globals)
     self.debug_flag = globals['bDebugOutput']
@@ -222,7 +225,7 @@ class MercenariesIPC:
     assert self.doing_location_checks
     return self.bounty_cache[type] >= count
 
-  def send_once(self, money: int = 0, message: str = ''):
+  def send_once(self, money: int = 0, message: str = '', support_item: str = ''):
     '''
     Send things that should only be delivered to the player once. At the moment
     this means money and chat/info messages.
@@ -235,7 +238,7 @@ class MercenariesIPC:
     '''
     self.validate()
 
-    if not money and not message:
+    if not money and not message and not support_item:
       return False
 
     if self.debug_flag.val():
@@ -246,9 +249,15 @@ class MercenariesIPC:
       # In practical terms, just by how much text we can fit on screen, this is
       # probably limited to about 50 cols.
       self.message_buffer.val().set_string(message)
-      self.message_flag.set(True, tt=LUA_TBOOL)
+      self.has_message.set(True, tt=LUA_TBOOL)
     else:
-      self.message_flag.set(False, tt=LUA_TBOOL)
+      self.has_message.set(False, tt=LUA_TBOOL)
+
+    if support_item:
+      self.support_item.val().set_string(f'template_support_{support_item}')
+      self.has_support_item.set(True, tt=LUA_TBOOL)
+    else:
+      self.has_support_item.set(False, tt=LUA_TBOOL)
 
     self.debug_flag.set(True)
     return True

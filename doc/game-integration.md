@@ -173,14 +173,26 @@ concerns about multi-delivery; we just compute the effective floor in the AP cli
 and inject it.
 
 
+### Airstrike coupons
+
+These can be installed with `Support_AddItem('template_support_foo')` or
+`Support_AddItem('template_support_foo', n)`; the former unlocks the item for
+use at the default price, the latter gives `n` free uses. Note that once those
+uses are expended you can still buy more at the default price! So these coupons
+are actually granting unlimited use (at a cost) until the next time the support
+menu is reset, which probably means at the start or end of the next mission (or
+possibly when dying, moving between provinces, etc).
+
+The actual wiring is done in the same way as handling messages -- we hijack
+three constants in `AttemptFactionMoodClamp` for `'Support_AddItem'` itself, the
+name of the support item to grant, and a flag, test the flag, and if true, grant
+the item.
+
 ### Future work
 
 At some point I would also like to add support for:
 - one-time faction reputation bonuses
-- airstrike coupons
 - health/ammo/grenade refills
-- hints
-  - capturing a number alive can give a hint about a progression item, perhaps?
 
 
 ## Receiving
