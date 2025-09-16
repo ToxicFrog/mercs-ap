@@ -1,3 +1,4 @@
+from math import floor
 from typing import NamedTuple
 
 from BaseClasses import ItemClassification
@@ -20,10 +21,13 @@ class ShopItem(NamedTuple):
     return int(options.shop_unlock_count)
 
   def groups(self):
-    return {'progression', 'shop'} | self.template_groups
+    return {'progression', 'shop', 'shop-unlock'} | self.template_groups
 
   def classification(self):
     return ItemClassification.progression
+
+  def discount(self, discount):
+    return ShopItem(self.id, self.tag, floor(self.price * discount), self.template_groups, self.template, self.title)
 
 
 SHOP_ITEMS = [

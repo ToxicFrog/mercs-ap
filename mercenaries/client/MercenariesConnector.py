@@ -97,9 +97,9 @@ class MercenariesConnector:
     items = [item_by_id(id) for id in items]
     sent_items = Counter()
     try:
-      self.converge_shop_items(self.item_group('shop', items))
-      self.converge_intel_items(self.item_group('intel', items))
-      self.converge_reputation_items(self.item_group('reputation', items))
+      self.send_shop_items(self.item_group('shop', items))
+      self.send_intel_items(self.item_group('intel', items))
+      self.send_reputation_items(self.item_group('reputation', items))
       sent_items += self.send_once(self.item_group('money', items))
     except IPCError as e:
       logger.info(f'Error sending items to game, will retry later: {e}')
@@ -109,25 +109,32 @@ class MercenariesConnector:
   def queue_message(self, msg):
     self.messages.append(msg)
 
-  def converge_shop_items(self, items):
+  def send_shop_items(self, items):
     # This is idempotent, so we just send the whole set of unlocks each time.
     # We do this even if the set of unlocks hasn't changed, because the player
     # may have unlocked new items in-game and we need to override that!
-    unlock_list = []
-    by_tag = {}
-    for item in (i for i in items if 'progression' in i.groups()):
-      if item.tag in by_tag:
-        by_tag[item.tag][1] += 1
+    unlocks = {}
+    discount_factor = 1.0 - self.options['shop_discount_percent']/100
+
+    unlock_items = self.item_group('shop-unlock', items)
+    if not unlock_items:
+      self.game.set_unlocked_shop_items([], 0)
+      return
+
+    for item in unlock_items:
+      if item.tag in unlocks:
+        unlocks[item.tag] = item.discount(discount_factor)
       else:
-        unlock = [item.tag, 1]
-        unlock_list.append(unlock)
-        by_tag[item.tag] = unlock
+        unlocks[item.tag] = item
 
-    self.game.set_unlocked_shop_items(
-      unlock_list, [i for i in items if 'filler' in i.groups()],
-      1.0 - self.options['shop_discount_percent']/100)
+    discount_items = sorted(self.item_group('shop-discount', items), key=lambda x: x.discount, reverse=True)
+    for discount in discount_items:
+      item = max(unlocks.values(), key=lambda x: x.price)
+      unlocks[item.tag] = item.discount(1.0 - discount.discount/100)
 
-  def converge_intel_items(self, items):
+    self.game.set_unlocked_shop_items(sorted(unlocks.values(), key=lambda x: x.title), len(items))
+
+  def send_intel_items(self, items):
     # This is fully idempotent and is a single call to setk() in practice so we
     # just do it unconditionally each time.
     chapter = self.current_chapter()
@@ -153,7 +160,7 @@ class MercenariesConnector:
 
     self.game.set_intel(total_intel, target_intel)
 
-  def converge_reputation_items(self, items):
+  def send_reputation_items(self, items):
     factions = Counter()
     for item in items:
       factions[item.faction()] += 1
@@ -180,8 +187,9 @@ class MercenariesConnector:
     else:
       message = self.messages[0]
 
-    if self.game.send_once(money=total, message=message):
-      print(f'Successfully dispatched ${total:,d} and message {message}')
+    support_item = ''
+    if self.game.send_once(money=total, message=message, support_item=support_item):
+      print(f'Successfully dispatched ${total:,d} + support {support_item} + message {message}')
       if self.messages:
         self.messages.popleft()
       return Counter(item.id for item in items)

@@ -74,7 +74,7 @@ class DiscountItem(NamedTuple):
     return ItemClassification.filler
 
   def groups(self):
-    return {'shop', 'filler'}
+    return {'filler', 'shop', 'shop-discount'}
 
 
 class CouponItem(NamedTuple):
@@ -99,7 +99,7 @@ class CouponItem(NamedTuple):
     return ItemClassification.filler
 
   def groups(self):
-    return {'shop', 'filler'}
+    return {'filler', 'shop', 'shop-coupon'}
 
   def applies_to(self, shop_item):
     return shop_item.groups() & self.compatible
