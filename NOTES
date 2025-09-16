@@ -8,12 +8,11 @@ Items marked with a ! are things I want to have working before alpha.
   - Bounty tracking sometimes doesn't update until...something. I save and load?
     I collect the next bounty? It would be nice if I could find out where it's
     really stored.
-  - Better error recovery. In particular, talking to the game while transiting
-    scenes and stuff tends to break in ways that aren't IPCError because it's
-    reading corrupted memory. We need to safely back out and retry when that happens.
   - Generic discounts shouldn't apply to the cheat weapons crate, or there should
     be a limit of one discount per slot, or something, because otherwise it attracts
     every generic discount you find into a singularity of savings
+  - Airstrike coupons remain unlocked until the next map transition, once the
+    coupon runs out you can just buy infinitely more, oops
 - Checks:
   - Number of unique vehicles destroyed, and/or specific vehicle types
     - Need to map out which types belong to which array slots
@@ -25,7 +24,6 @@ Items marked with a ! are things I want to have working before alpha.
   - Faction reputation bonuses
     - Probably needs more code injection
   - Stuff that needs more research to see if it's possible:
-    - Airstrike coupons
     - Resource refills
 
 ## Other notes
@@ -536,3 +534,86 @@ Which calls mission_AddSupport:
       019 007FFC14       JMP -15 ; 5
       020 0000801B    RETURN
 
+Airstrike coupon balancing
+Giving the player N free airstrikes keeps them in the player's support bar once
+the tally hits zero and they can buy more at market price -- this is presumably
+so that in missions that require the use of a given airstrike you can't be softlocked
+by running out as long as you have some cash.
+
+Ideally, I would like to take it away when the tally hits zero, but I don't have
+enough code to do that and it's not clear I can query airstrike quantity from lua
+in any case, and it's hard to find from C.
+
+Alternate idea: implement a new economy. Leave the prices of temporarily granted
+airstrikes alone, but reduce the prices of shop unlocks *and* all monetary rewards
+by a factor of, say, 1000. This gives us airstrike prices ranging from 2 (medical crate)
+to 1000 (cheat crate) -- but since these prices are applied in the shop array,
+rather than in the default pricing, a la carte purchase of couponed airstrikes
+becomes impossibly expensive.
+
+Alternately, we could leave rewards the same and adjust the prices *up* by a factor
+of 1000 (or more).
+
+Unfortunately, here's where the info is stored:
+Shop prices: DATAPS2/DATAPOD/ITEMSHOP.INI on disc, unknown at runtime
+Airstrike prices: DATAPS2/ASSETS.DSK...probably
+Mission rewards: DATAPS2/MISSION.INI on disc, unknown at runtime
+Bounty rewards: DATAPS2/ASSETS.DSK ("cashValue" key) on disc, unknown at runtime
+Challenge rewards: ???
+
+Simplest is probably to crank shop and airstrike prices and make them impossible
+to afford without unlocks or coupons, although something I need to check is: if
+you've unlocked something and you get a coupon for it, does it use the base price
+or the unlocked price? If the latter this is only a solution for things that aren't
+also sold in the MOM...which to be fair almost everything has an equivalent.
+
+Fuel-Air Bomb template price is at $51E510
+This is template_support_p_fuelairbomb, the mafia version -- not sure where the
+non-mafia version is, need to map out this whole array.
+This appears to be spaced 32 bytes apart, and contains entries in the same
+order as the shop indices -- presumably the shop index is into this array.
+But where are the prices for the other things?
+
+Immediately after the price is a flag: 0 for vehicle, 1 for supplies, 2 for AS.
+
+There don't appear to be any extra array entries containing things for the non-shop
+support items. :/
+
+Looks like that array may start at $5240DC and contain entries spaced 10 words
+(40 bytes) apart, with the first price at $5240FC.
+
+Unfortunately, changing the values there does not appear to affect the price of
+the airstrike in the menu, and opening the PDA resets all of these values.
+
+There must be another array somewhere that this data is copied from. Where?
+
+$0051DE90 - $0051E650: template data for shop
+$005240FC - $005248CC: an array of 51 40-byte structs that look like they might be airstrike data, but which are overwritten when the PDA is opened.
+
+state 9, a support_tankbuster costs $136,500
+After killing some mafia dudes it costs $148,500
+So the cost depends on reputation WITH THE MAFIA even if I'm ordering the airstrike from another faction
+With mafia reputation at exactly 100, the tankbuster costs 120,000
+the p_tankbuster, at reputation 100, costs 200,000 and it won't let me use it if I don't have any freebies??
+
+the p_surgicalstrike costs 40,000 -- I guess it uses the base price without reputation adjustment if you don't have it unlocked? -- but I can still use it even if I don't have any freebies
+
+it looks like this is actually a result of the "can you use this" check being performed against the base price, not the reputation-adjusted price
+
+So I think maybe what I do is, I make coupons available only for shop items, and set the base price in 0051DE90 to be 1000x normal or similar, it's a uint32_t, it can handle it
+and then if you have it unlocked you get the in-shop price, and if you don't you get the inflated base price, I think
+
+at reputation 100, something unlocked in the shop that normally costs 200k instead costs 80k
+
+Tragically, the shop template data is *only* used to populate the shop, not the quickbar, even when using the p_ versions :/
+Where the hell does quickbar pricing info come from????
+
+$55897c - spaced 56 bytes apart and in hundreds of dollars, might be it? nope
+
+Ok, so, new idea
+Rather than having coupons for specific things, we have coupons for random things:
+- Airstrike/Supplies/Vehicle coupon give you a random one of those
+- Allies/China/Mafia/SK coupon give you a random thing from that faction
+
+We might in the future want to rate-limit them or something, dispense a new one
+every minute or every time you find a check or something.

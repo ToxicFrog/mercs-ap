@@ -160,3 +160,24 @@ MISSIONS = {
     ],
   )
 }
+
+'''
+Notes on what you need to do in each mission, for fine-tuning logic.
+
+A1: destroy two artillery vehicles. You get two surgical strikes and can use C4 if you run out.
+A2: destroy three tunnel exits. You're given two surgicals.
+A3: destroy three jammer vehicles, then use a bunker buster on the tower to reveal the ace. Having done so, a Hind will appear, so anti-air is also a must -- there's AA trucks in the mission you can hijack, and at least one enemy with a Stinger.
+
+K1: defend from incoming vehicles using emplacements.
+K2: rescue a spy from the chinese. You've given a chinese jeep but being able to summon another one helps, as does being able to summon a helicopter.
+K3:
+
+M1: steal a NK truck and blow up three guns; C4 works fine for the latter
+M2: steal a crate using a helicopter you're given
+M3:
+
+C1: destroy five buildings. On-site artillery can range on four of them and you're given an artillery beacon and wire-guided rocket equipped APC for the fifth.
+C2:
+C3:
+
+'''

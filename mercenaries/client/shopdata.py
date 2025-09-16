@@ -98,63 +98,62 @@ UNLOCKS = [
 
 NROF_UNLOCKS = len(UNLOCKS)
 
-'''
-The following templates appear in ASSETS.DSK but not in SHOP.INI. I believe
-they are the non-Mafia versions of the above used in some missions, plus possibly
-some that you can't get in the shop at all.
+# The following templates appear in ASSETS.DSK but not in SHOP.INI. I believe
+# they are the non-Mafia versions of the above used in some missions, plus possibly
+# some that you can't get in the shop at all.
+EXTRA_TEMPLATES = [
+  # Entirely new airstrikes:
+  'hvySmartBomb',
 
-  Entirely new airstrikes:
-hvySmartBomb
+  # Versions of the airstrikes without the p_ prefix:
+  'airsuperiority',
+  'artillery',
+  'artillery2',
+  'artillery3',
+  'bunkerbuster',
+  'carpetbomb',
+  'clusterbomb',
+  'cruisemissile',
+  'fuelairbomb',
+  'guidedmissile',
+  'gunship',
+  'gunship2',
+  'gunship3',
+  'smartbomb',
+  'strategicmissile',
+  'surgicalstrike',
+  'tankbuster',
 
+  # Versions of the crates not present in the shop; these are probably the same
+  # contents with a different delivery vehicle:
+  'crate_Allies'
+  'crate_AlliesAmmoVeh'
+  'crate_AlliesC4'
+  'crate_AlliesHeavy'
+  'crate_AlliesStinger'
+  'crate_China'
+  'crate_ChinaAmmoVeh'
+  'crate_ChinaArmor'
+  'crate_ChinaHeavy'
+  'crate_chinaStinger'
+  'crate_ChinaVehicle'
+  'crate_SK'
+  'crate_SKC4'
+  'crate_SKCovert'
+  'crate_SKHeavy'
+  'crate_SKSniper'
+  'crate_skStinger'
 
-  Versions of the airstrikes without the p_ prefix (note that 'strategicmissile' already lacks that prefix in the shop and is not included here):
-airsuperiority
-artillery
-artillery2
-artillery3
-bunkerbuster
-carpetbomb
-clusterbomb
-cruisemissile
-fuelairbomb
-guidedmissile
-gunship
-gunship2
-gunship3
-smartbomb
-strategicmissile
-surgicalstrike
-tankbuster
-
-  Versions of the crates not present in the shop; these are probably the same contents with a different delivery vehicle:
-crate_Allies
-crate_AlliesAmmoVeh
-crate_AlliesC4
-crate_AlliesHeavy
-crate_AlliesStinger
-crate_China
-crate_ChinaAmmoVeh
-crate_ChinaArmor
-crate_ChinaHeavy
-crate_chinaStinger
-crate_ChinaVehicle
-crate_SK
-crate_SKC4
-crate_SKCovert
-crate_SKHeavy
-crate_SKSniper
-crate_skStinger
-
-  Versions of vehicle deliveries that are not available in the shop:
-deliverAlliesHumvee
-deliverAlliesStryker
-deliverChinaJeep
-deliverSKAPC
-deliverSKHumveeAT
-deliverSKHumveeMG
-deliverstolenalliesAvenger1
-deliverStolenCivCargoTruck
-deliverStolenNKCargoTruck
-deliverStolenPressTruck1
-deliverVIPCar
-'''
+  # Versions of vehicle deliveries that are not available in the shop:
+  'deliverAlliesHumvee',
+  'deliverAlliesStryker',
+  'deliverChinaJeep',
+  'deliverSKAPC',
+  'deliverSKHumveeAT',
+  'deliverSKHumveeMG',
+  'deliverstolenalliesAvenger1',
+  'deliverStolenCivCargoTruck',
+  'deliverStolenNKCargoTruck',
+  'deliverStolenPressTruck1',
+  'deliverVIPCar',
+]

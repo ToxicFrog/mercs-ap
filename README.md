@@ -59,8 +59,8 @@ in it. Once you have that, change the following settings:
 
 If your computer is sufficiently powerful, you may also want to open up
 `Settings -> Game Properties -> Emulation` and set the `EE Cycle Rate` to 180%
-or 300%; at default speeds Mercenaries tends to drop from 30fps to 20fps in busy
-scenes, but on a fast computer this will let it maintain 30fps without drops.
+or 300%; this will mess up the inter-chapter cutscenes, but allow the game to
+maintain a steady 30fps during gameplay.
 
 ### Per-game setup
 

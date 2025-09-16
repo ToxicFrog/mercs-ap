@@ -8,6 +8,45 @@ pcsx2: Pine = Pine(path = '/run/user/8509/pcsx2.sock')
 
 print(pcsx2.game_info())
 
+for address in [0x515a28, 0x515a40, 0x515b78, 0x515b90, 0x515bf0, 0x515c80, 0x51def0, 0x5244e0, 0x5246c4]:
+  pcsx2.poke32(address, address//1000)
+sys.exit(0)
+
+base = 0x55897c
+for idx in range(-5, 40):
+  addr = base + (idx*0x38)
+  ptr = pcsx2.peek32(addr)
+  print(f'{addr:08X} [{idx:2d}] {ptr:08X} {ptr*100:d}')
+  # pcsx2.poke32(addr, 0x7fffffff)
+sys.exit(0)
+
+base = 0x5240DC
+base = 0x0051DE90
+
+for idx in range(0, 63):
+  addr = base + (idx*32)
+  ptr = pcsx2.peek32(addr)
+  print(f'{addr:08X} [{idx:2d}] {ptr:08X} {ptr:d}')
+  pcsx2.poke32(addr, 0x7fffffff)
+sys.exit(0)
+
+# for idx in range(-1, 60):
+for idx in range(-1, 52):
+  addr = base + (idx*40) + 32
+  ptr = pcsx2.peek32(addr)
+  print(f'{addr:08X} [{idx:2d}] {ptr:08X} {ptr:d}')
+  # pcsx2.poke32(addr, ptr//10)
+
+sys.exit(0)
+
+for idx in range(80):
+  addr = 0x51E650-idx*32
+  ptr = pcsx2.peek32(addr)
+  print(f'{addr:08X} [{63-idx:2d}] {ptr:d}')
+  # print(f'{addr:08X} {ptr:12d} {ptr:08X} {pcsx2.readmem(ptr, 8)}')
+
+sys.exit(0)
+
 # Lptr = pcsx2.peek32(0x0056CBD0)
 # L = GCObject(pcsx2, Lptr)
 
