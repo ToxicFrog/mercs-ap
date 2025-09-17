@@ -227,13 +227,13 @@ class Lua_GCString(Lua_GCObject):
     return '%s [h=%08X,$%08X]' % (repr(self.data.decode(errors='replace')), self.hash, self.addr)
 
   def set_string(self, buf: str):
-    buf = buf.encode() + b'\0'
+    buf = buf.encode()
     # assert len(buf) <= self.max_size, f'Cannot exceed size of existing string table entry overwriting {self}'
     if len(buf) > self.max_size:
-      buf = buf[0:self.max_size-1] + b'\0'
+      buf = buf[0:self.max_size-1]
     self.size = len(buf)
     self.pine.poke32(self.addr+12, self.size)
-    self.pine.writemem(self.addr+16, buf)
+    self.pine.writemem(self.addr+16, buf + b'\0')
 
   def dump(*args):
     return
