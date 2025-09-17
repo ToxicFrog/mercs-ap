@@ -20,6 +20,7 @@ Intel: sum up the total amount of intel we have
 '''
 
 from collections import Counter, deque
+import random
 from typing import Any, Dict, List, Set
 
 from CommonClient import logger
@@ -100,7 +101,7 @@ class MercenariesConnector:
       self.send_shop_items(self.item_group('shop', items))
       self.send_intel_items(self.item_group('intel', items))
       self.send_reputation_items(self.item_group('reputation', items))
-      sent_items += self.send_once(self.item_group('money', items))
+      sent_items += self.send_once(items)
     except IPCError as e:
       logger.info(f'Error sending items to game, will retry later: {e}')
 
@@ -181,17 +182,33 @@ class MercenariesConnector:
     promptly) but we do care about losing money, so the latter gets returned
     to the caller so it can be recorded server-side as having been delivered.
     '''
-    total = sum([item.amount for item in items])
     if not self.messages:
       message = ''
     else:
       message = self.messages[0]
 
-    support_item = ''
-    if self.game.send_once(money=total, message=message, support_item=support_item):
-      print(f'Successfully dispatched ${total:,d} + support {support_item} + message {message}')
+    money = self.item_group('money', items)
+    money_total = sum(item.amount for item in money)
+    sent = Counter(item.id for item in money)
+
+    support_template = ''
+    unlocks = self.item_group('shop-unlock', items)
+    support = self.item_group('shop-coupon', items)
+    for coupon in support:
+      matches = [item for item in unlocks if coupon.applies_to(item)]
+      if len(matches) < 3:
+        continue
+      support_item = random.choice(matches)
+      support_template = support_item.template
+      sent += Counter([coupon.id])
+      break
+
+    if self.game.send_once(money=money_total, message=message, support_item=support_template):
+      if support_template:
+        print(f'Reified {coupon} as {support_template} from choices {[i.title for i in matches]}')
+      print(f'Successfully dispatched ${money_total:,d} + support {support_template} + message {message}')
       if self.messages:
         self.messages.popleft()
-      return Counter(item.id for item in items)
+      return sent
     else:
       return Counter()
