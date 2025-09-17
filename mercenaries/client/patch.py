@@ -196,7 +196,7 @@ def patch_afmc(globals):
       # Output a pending message, if any.
       # 29 Skip call to PrintDebugMessage if not <k13> has_message
       LuaOpcode('LOADK', A=1, Bx=13),
-      LuaOpcode('TEST', C=0, B=0, A=0),
+      LuaOpcode('TEST', C=0, B=1, A=0),
       LuaOpcode('JMP', sBx=3), # 31, so PC=32, jump to 35
       # 32 <k10> Ui_PrintDebugMessage(<k11> message)
       LuaOpcode('GETGLOBAL', A=1, Bx=10),
@@ -206,7 +206,7 @@ def patch_afmc(globals):
       # If there's an airstrike coupon queued, grant it
       # 35 skip if not <k22> has_support_item
       LuaOpcode('LOADK', A=1, Bx=22),
-      LuaOpcode('TEST', C=0, B=0, A=0),
+      LuaOpcode('TEST', C=0, B=1, A=0),
       LuaOpcode('JMP', sBx=4), # 37, so PC=38, jump to 42
       # 38 <k12> Support_AddItem(<k21> support_item)
       LuaOpcode('GETGLOBAL', A=1, Bx=12),
