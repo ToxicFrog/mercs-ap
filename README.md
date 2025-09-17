@@ -90,7 +90,10 @@ money, intel, and faction reputation adjustments. Wandering around the game and
 doing things to force it to load/unload areas and NPCs tends to speed up this
 process.
 
-Combat logic only takes into account how many things you have unlocked, not what things, e.g. it will not lock a mission where you fight helicopters behind having access to anti-air support. Missions generally give you everything you need on-site if you look around, so this is not a problem in practice.
+Combat logic only takes into account how many things you have unlocked, not what
+things, e.g. it will not lock a mission where you fight helicopters behind
+having access to anti-air support. Missions generally give you everything you
+need on-site if you look around, so this is not a problem in practice.
 
 Windows is not currently supported, and needs some changes to the emulator
 connection code to function.
@@ -105,7 +108,6 @@ yet to figure out if they're viable; this is a wishlist, not a roadmap.
   - Challenges
   - Vehicles driven/destroyed catalogue entries
 - New items:
-  - Shop coupons
   - Character skins
   - Health/ammo/grenade refills
 - Improved logic:
