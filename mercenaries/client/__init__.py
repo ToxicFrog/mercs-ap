@@ -6,11 +6,24 @@ else in this directory.
 '''
 
 import asyncio
+import os
+from os import path
+import platform
 
 import Utils
 from CommonClient import get_base_parser, gui_enabled, logger, server_loop
 
 from .MercenariesClient import MercenariesContext, tracker_loaded
+
+def get_pine_path():
+  match platform.system():
+    case 'Linux':
+      return path.join(os.environ.get('XDG_RUNTIME_DIR', '/tmp'), 'pcsx2.sock')
+    case 'Darwin':
+      return path.join(os.environ.get('TMPDIR', '/tmp'), 'pcsx2.sock')
+    case 'Windows':
+      return 'localhost:28011'
+
 
 def main(*args):
   Utils.init_logging('MercenariesClient')
@@ -31,7 +44,7 @@ def main(*args):
   import colorama
 
   parser = get_base_parser()
-  parser.add_argument('--pcsx2', default=None, help='Absolute path (unix) or host:port (windows) for PCSX2 PINE connection')
+  parser.add_argument('--pcsx2', default=get_pine_path(), help='Absolute path (unix) or host:port (windows) for PCSX2 PINE connection')
   parser.add_argument('--name', default=None, help='Slot name')
 
   colorama.init()

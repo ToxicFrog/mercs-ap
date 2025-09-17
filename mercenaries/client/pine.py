@@ -23,6 +23,10 @@ class Pine:
       self.sock = socket.socket(family = socket.AF_UNIX, type = socket.SOCK_STREAM)
       self.sock.connect(path)
 
+    elif address:
+      address = tuple(address.split(':'))
+      self.sock = socket.create_connection(address)
+
     else:
       raise NotImplementedError
 

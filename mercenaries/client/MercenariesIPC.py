@@ -48,7 +48,13 @@ class MercenariesIPC:
   latest_chapter: int = 0
 
   def __init__(self, pine_path: str) -> None:
-    self.pine = Pine(pine_path)
+    if pine_path[0] == '/':
+      print(f'Connecting to PCSX2 via UNIX domain socket {pine_path}')
+      self.pine = Pine(path=pine_path)
+    else:
+      print(f'Connecting to PCSX2 via TCP socket {pine_path}')
+      self.pine = Pine(address=pine_path)
+
     self.shop = MafiaShop(self.pine)
     self.deck = DeckOf52(self.pine)
     self.stats = PDAStats(self.pine)
