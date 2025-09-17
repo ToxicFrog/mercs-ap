@@ -21,14 +21,23 @@ chapter-specific checks.
 
 ### Items
 
-Progression items are Ace intel -- which can be configured to be suited or
-progressive, and to use the vanilla intel amounts or a fixed number of 'intel
-tokens' per Ace -- and Merchant of Menace unlocks. Duplicate shop unlocks act as
-a stacking discount for the item in question.
+#### Progression
 
-Filler items are cash bonuses (ranging from $50k to $500k), permanent faction
-reputation increases (with diminishing returns), and shop discounts (10% to 30%,
-automatically applied to your most expensive item).
+**Ace intel.** This serves the same purpose as intel in the vanilla game.
+Depending on your yaml settings, it can use the vanilla intel amounts or a fixed
+number of "intel tokens" per ace, and it can be suited or progressive.
+
+**Merchant of Menace unlocks.** These are the only way to unlock new things in the store. You can enable duplicates in the item pool, in which case picking up duplicate unlocks will give you a permanent discount on that item.
+
+#### Filler
+
+**Cash bonuses.** These range from $5k to $500k.
+
+**Faction mood adjustments.** The more of these you have for a faction, the higher their minimum mood towards you is. There are diminishing returns as you collect more.
+
+**Shop discounts.** These range from 10% to 30% off. They are permanent and are automatically applied to whatever your most expensive item is. As you get more expensive items the coupons will automatically be moved around.
+
+**Free samples.** These apply to broad categories (e.g. "free airstrike") and will pick an appropriate random item from that category when issued to you. If you don't have at least three items in that category, they'll wait until you do. These samples are usually lost when you do anything involving a loading screen, so use it or lose it.
 
 ### Hints
 
@@ -80,6 +89,8 @@ something in AP and it showing up in-game. This is particularly the case with
 money, intel, and faction reputation adjustments. Wandering around the game and
 doing things to force it to load/unload areas and NPCs tends to speed up this
 process.
+
+Combat logic only takes into account how many things you have unlocked, not what things, e.g. it will not lock a mission where you fight helicopters behind having access to anti-air support. Missions generally give you everything you need on-site if you look around, so this is not a problem in practice.
 
 Windows is not currently supported, and needs some changes to the emulator
 connection code to function.
