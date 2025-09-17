@@ -1,5 +1,5 @@
 from math import floor
-from typing import NamedTuple
+from typing import NamedTuple, Set
 
 from BaseClasses import ItemClassification
 
@@ -10,7 +10,7 @@ class ShopItem(NamedTuple):
   id: int
   tag: int   # Internal tag used by the engine to represent this
   price: int # Base price before reputation modifiers
-  template_groups: str
+  template_groups: Set[str]
   template: str
   title: str  # User-facing name
 
