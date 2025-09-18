@@ -58,6 +58,10 @@ either someone else's in your world, or one of yours in someone else's world.
 - [PCSX2](https://pcsx2.net/) to play it with
   - Real hardware not supported, sorry
 
+Note that this **is** compatible with iso and memory patches like the subtitles
+patch, widescreen, texture replacement, etc, as long as the base game is the
+US version.
+
 ### First-time setup
 
 Get PCSX2 installed and running and make sure you can actually run Mercenaries
@@ -95,8 +99,7 @@ things, e.g. it will not lock a mission where you fight helicopters behind
 having access to anti-air support. Missions generally give you everything you
 need on-site if you look around, so this is not a problem in practice.
 
-Windows is not currently supported, and needs some changes to the emulator
-connection code to function.
+Windows and OSX should work, but are completely untested.
 
 ## Future Work
 
@@ -109,6 +112,7 @@ yet to figure out if they're viable; this is a wishlist, not a roadmap.
   - Vehicles driven/destroyed catalogue entries
 - New items:
   - Character skins
+  - Health/ammo/grenade capacity upgrades
   - Health/ammo/grenade refills
 - Improved logic:
   - Better mission logic, e.g. missions that want anti-air depending on having
