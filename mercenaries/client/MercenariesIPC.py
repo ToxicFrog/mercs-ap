@@ -185,8 +185,9 @@ class MercenariesIPC:
     try:
       L = GCObject(self.pine, self.L_ptr)
       missions = L.getglobal('mission_accepted').val()
+      north = L.getglobal('quadrant').val().data == b'nw'
       self.mission_cache = {
-        faction: missions.getfield(faction).val()
+        faction: missions.getfield(faction).val() + (6 if north else 0)
         for faction in ['allies', 'china', 'mafia', 'sk']
         if missions is not None
       }
