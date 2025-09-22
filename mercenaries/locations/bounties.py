@@ -24,7 +24,9 @@ class BountyLocation(NamedTuple):
       return False
 
     nrof_checks = options.bounty_checks[self.type]
-    if nrof_checks == 'vanilla':
+    if nrof_checks == 'none':
+      return False
+    elif nrof_checks == 'vanilla':
       return self.count in VANILLA_BOUNTY_THRESHOLDS[self.type]
     elif nrof_checks == 'all':
       return True
