@@ -40,6 +40,8 @@ class MafiaShop:
     self.unlock_count(0)
 
     for idx,unlock in enumerate(unlocks):
+      # TODO: this only sets the price as displayed, not the price as billed; the player
+      # is still charged full price (modulated by faction discounts) once it's in the quickbar.
       self.unlocks[idx].tag(unlock.tag)
       self.unlocks[idx].price(unlock.price)
       self.unlocks[idx].new(0) # TODO: maybe set this for new items (which aren't neccessarily at tail)

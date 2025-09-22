@@ -608,3 +608,37 @@ Rather than having coupons for specific things, we have coupons for random thing
 
 We might in the future want to rate-limit them or something, dispense a new one
 every minute or every time you find a check or something.
+
+
+Bounty names. `nextsw(r0)` looks like this:
+
+    r1 = g_iCurrentSwBountyIndex
+    if not r1 then
+      g_iCurrentSwBountyIndex = 1
+    end
+    if r0 then
+      util_SkipToBounty(r0)
+    else
+      util_SkipToBounty(
+        util_GetBountyName('sw', g_iCurrentSwBountyIndex))
+      g_iCurrentSwBountyIndex += 1
+    end
+
+There's a similar `nextnw` that uses `g_iCurrentNwBountyIndex` and `'nw'`.
+
+`util_GetBountyName(map, idx)`, meanwhile, looks like:
+
+    local bounties
+    if map == 'sw' then
+      bounties = { 'bty_treasure01', ..., 'swlistenpost01', ..., 'bty_blueprint01', ..., 'monument_sw1', ... }
+    else
+      bounties = { ... }
+    end
+    local result = bounties[idx]
+    collectgarbage()
+    return result
+
+
+Airstrike discount issues. The "airstrike price" field I've been modifying only
+affects the price displayed in the shop. The hotbar still displays the real price
+and you are still charged full price when buying it.
