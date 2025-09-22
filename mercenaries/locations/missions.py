@@ -167,17 +167,26 @@ Notes on what you need to do in each mission, for fine-tuning logic.
 A1: destroy two artillery vehicles. You get two surgical strikes and can use C4 if you run out.
 A2: destroy three tunnel exits. You're given two surgicals.
 A3: destroy three jammer vehicles, then use a bunker buster on the tower to reveal the ace. Having done so, a Hind will appear, so anti-air is also a must -- there's AA trucks in the mission you can hijack, and at least one enemy with a Stinger.
+A4: escort a journalist. Just needs a fast vehicle, and you're given several.
 
 K1: defend from incoming vehicles using emplacements.
 K2: rescue a spy from the chinese. You've given a chinese jeep but being able to summon another one helps, as does being able to summon a helicopter.
-K3:
+K3: Destroy nine missile launchers and verify the King of Clubs. MLs can be done with C4 or airstrikes. King is hiding on a rooftop and basically requires a helicopter, looks like. TODO: double check this.
+K4: Destroy chinese fuel tanks and trucks. A helicopter with air-to-ground capability helps a lot. Will tank chinese reputation.
+K5: Infiltrate NK fortifications and rescue a downed pilot.
+K6: Travel past the Black Gate and destroy several artillery installations + verify the Jack. Time limit. Helicopter with anti-ground strongly recommended, but you can pick up two at Ichon.
 
 M1: steal a NK truck and blow up three guns; C4 works fine for the latter
 M2: steal a crate using a helicopter you're given
-M3:
+M3: verify the Jack of Clubs and optionally steal a FROG-7. A tankbuster or reasonably precise airstrike like Ballistic Missile or Surgical Strike to deal with the armour at the entrance is strongly recommended.
+M4: Destroy a bunch of SK forces raiding an NK fortification. This is basically an endless supply of APCs you need to destroy. Having something with a cannon helps a lot. There's an NK tank you can hijack.
+M5: Assassinate four targets. Anti-air or fast movement practically a necessity since two of them will get in a helicopter and flee.
 
 C1: destroy five buildings. On-site artillery can range on four of them and you're given an artillery beacon and wire-guided rocket equipped APC for the fifth.
-C2:
-C3:
+C2: assassinate three mafia officers. You're given a sniper rifle, which is all you really need, but a helicopter helps and a Mafia-flagged helicopter helps A LOT.
+C3: kill six NK officers + verify the Queen of Clubs. Lots of enemy infantry and light armour.
+
+C4: rescue a chinese officer on the nampo-haeju road and take him south to haeju, destroying NK vehicles and fortifications en route. A tank or cannon-equipped APC makes this a lot easier.
+C5: defend the Propaganda Village from SK forces. You're given recoilless rifles, but have to deal with an SK attack helicopter and an APC flanking you; anti-air and anti-tank both make this easier.
 
 '''

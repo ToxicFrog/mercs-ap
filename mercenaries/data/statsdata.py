@@ -16,6 +16,8 @@ BOUNTY_IDX_ADDRS = {
 # It seems to be fairly finicky about what counts as a "destroy". Inflicting
 # heavy damage on a vehicle that then explodes from burning or splash damage
 # does not count -- you have to deal the killing blow directly.
+# Leading ? means I'm not sure about the name.
+# Trailing ? means I'm not sure where to find it.
 VEHICLES_DESTROYED_ADDR = 0x005a7264
 VEHICLE_NAMES = [
   'unknown000',
@@ -26,10 +28,10 @@ VEHICLE_NAMES = [
   'unknown005',
   'unknown006',
   'unknown007',
-  'unknown008',
+  'K1025 Scout',  # common SK scout
   'unknown009',
   'unknown010',
-  'unknown011',
+  'BJ2020 Scout',  # common chinese scout
   'unknown012',
   'unknown013',
   'unknown014',
@@ -44,7 +46,7 @@ VEHICLE_NAMES = [
   'unknown023',
   'unknown024',
   'unknown025',
-  'unknown026',
+  'UH-60 Transport?',  # Very common aircraft but may not be flyable until unlocked at the merchant
   'unknown027',
   'unknown028',
   'unknown029',
@@ -53,13 +55,13 @@ VEHICLE_NAMES = [
   'unknown032',
   'unknown033',
   'unknown034',
-  'unknown035',
+  'Type 95 Anti-Air?',  # Only from shop so far
   'unknown036',
   'unknown037',
   'Sungri Scout',  # found all over the place in the early game
-  'unknown039',
+  'K966 Scout',  # SK version of the 1025 with a TOW. Available from the beginning at Kaesong.
   'unknown040',
-  'unknown041',
+  'MG Technical',  # chapter 1 mafia area
   'unknown042',
   'Control Vehicle',  # Jammer vehicles in Ace of Clubs mission
   'unknown044',
@@ -119,8 +121,8 @@ VEHICLE_NAMES = [
   'unknown098',
   'unknown099',
   'unknown100',
-  'unknown101',
-  'unknown102',
+  'On Foot',
+  'Type 89 APC',  # think this is NK? available in ch1 at least
   'unknown103',
   'unknown104',
   'unknown105',
@@ -136,7 +138,7 @@ VEHICLE_NAMES = [
   'unknown115',
   'unknown116',
   'BTR APC',  # Can be found occasionally in chapter 1
-  'unknown118',
+  'FROG 7',  # Missile trucks in mission K3
   'unknown119',
   'unknown120',
   'unknown121',
@@ -158,7 +160,7 @@ VEHICLE_NAMES = [
   'unknown137',
   'unknown138',
   'unknown139',
-  'unknown140',
+  'T-54 Tank',  # Can be stolen from various clubs in chapter 1, guaranteed one in the Ace of Clubs mission
   'unknown141',
   'unknown142',
   'unknown143',
@@ -188,7 +190,7 @@ VEHICLE_NAMES = [
   'unknown167',
   'unknown168',
   'unknown169',
-  'unknown170',
+  'ZSU-57 Anti-Air?',
   'unknown171',
   'unknown172',
   'unknown173',
@@ -205,7 +207,7 @@ VEHICLE_NAMES = [
   'unknown184',
   'unknown185',
   'unknown186',
-  'unknown187',
+  'BRDM Scout',  # Common in NK outposts in chapter 1/2
   'unknown188',
   'unknown189',
   'unknown190',
@@ -226,13 +228,13 @@ VEHICLE_NAMES = [
   'unknown205',
   'unknown206',
   'unknown207',
-  'unknown208',
+  'M1025 Scout',  # Common at allied DMZ in chapter 1
   'unknown209',
-  'unknown210',
+  'Fuel Truck',  # Mission K4 only or merchant, I think
   'unknown211',
   'unknown212',
   'unknown213',
-  'unknown214',
+  'K200 APC',  # chapter 2 parked at Ichon Airfield
   'unknown215',
   'unknown216',
   'unknown217',
@@ -240,16 +242,16 @@ VEHICLE_NAMES = [
   'unknown219',
   'unknown220',
   'unknown221',
-  'unknown222',
+  'Cargo Truck',  # Open-topped truck, found in K3 among other places
   'unknown223',
   'unknown224',
-  'unknown225',
-  'unknown226',
+  'M1126 APC',  # Granted by optional objective in A3, starts spawning in the DMZ in chapter 2
+  'SMC 2300',  # Civilian white box truck, all over the place
   'unknown227',
   'BMP APC',
   'unknown229',
   'unknown230',
-  'unknown231',
+  'MD-530 Scout',  # Mafia helicopter, can be found near mafia HQ rarely after completing M2, given during M2
   'unknown232',
   'unknown233',
   'unknown234',
@@ -267,7 +269,7 @@ VEHICLE_NAMES = [
   'unknown246',
   'unknown247',
   'unknown248',
-  'unknown249',
+  'Street Racer',  # During mission M8 *only* or via shop
   'unknown250',
   'unknown251',
   'unknown252',
