@@ -223,6 +223,7 @@ class MercenariesWorld(World):
         item for item in self.multiworld.get_items()
         if item.player != self.player
         and item.advancement
+        and item.code
         and item.location.player == self.player
       ]
       self.random.shuffle(extras)
@@ -234,6 +235,7 @@ class MercenariesWorld(World):
         item for item in self.multiworld.get_items()
         if item.player == self.player
         and item.advancement
+        and item.code
         and 'intel' not in items.item_by_id(item.code).groups()
       ]
       self.random.shuffle(extras)
