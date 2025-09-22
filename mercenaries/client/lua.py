@@ -230,7 +230,10 @@ class Lua_GCString(Lua_GCObject):
     buf = buf.encode()
     # assert len(buf) <= self.max_size, f'Cannot exceed size of existing string table entry overwriting {self}'
     if len(buf) > self.max_size:
+      print("warning: truncating string")
+      print('-', buf)
       buf = buf[0:self.max_size-1]
+      print('+', buf)
     self.size = len(buf)
     self.pine.poke32(self.addr+12, self.size)
     self.pine.writemem(self.addr+16, buf + b'\0')
