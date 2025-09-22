@@ -28,11 +28,11 @@ class GenericIntelItem(NamedTuple):
       return 0
 
     if options.progressive_intel:
-      return options.intel_in_pool
+      return int(options.intel_in_pool)
     elif suit_to_chapter(self.suit) > options.goal:
       return 0
     else:
-      return options.intel_in_pool//options.goal
+      return int(options.intel_in_pool//options.goal)
 
   def intel_amount(self):
     return 1
