@@ -11,6 +11,9 @@ class GenericIntelItem(NamedTuple):
   id: int
   suit: str = None
 
+  def __hash__(self):
+    return self.id
+
   def name(self):
     if self.suit:
       return f'{self.suit.capitalize()} Intel'
@@ -48,6 +51,9 @@ class CardIntelItem(NamedTuple):
   rank: int
   suit: str
   rank_names = [None, None, 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King']
+
+  def __hash__(self):
+    return self.id
 
   def name(self):
     if self.suit:

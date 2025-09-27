@@ -14,6 +14,9 @@ class ShopItem(NamedTuple):
   template: str
   title: str  # User-facing name
 
+  def __hash__(self):
+    return self.id
+
   def name(self):
     return self.title
 

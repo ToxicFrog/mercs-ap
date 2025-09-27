@@ -13,6 +13,9 @@ class MoneyItem(NamedTuple):
   weight: int
   amount: int
 
+  def __hash__(self):
+    return self.id
+
   def name(self):
     return f'${self.amount:,d}'
 
@@ -36,6 +39,9 @@ class ReputationItem(NamedTuple):
   id: int
   weight: int
   faction_name: str
+
+  def __hash__(self):
+    return self.id
 
   def name(self):
     return f'{self.faction_name} reputation'
@@ -64,6 +70,9 @@ class DiscountItem(NamedTuple):
   weight: int
   discount: int
 
+  def __hash__(self):
+    return self.id
+
   def name(self):
     return f'{self.discount}% discount'
 
@@ -88,6 +97,9 @@ class CouponItem(NamedTuple):
   weight: int
   title: str
   compatible: Set[str]
+
+  def __hash__(self):
+    return self.id
 
   def name(self):
     return f'Free {self.title}'
