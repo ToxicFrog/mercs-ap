@@ -103,7 +103,7 @@ def patch_afmc(globals):
   +   CONST$00C4D8E8 k21 'template_support_*' ; name of support item to add
   +   CONST$00C4D8F0 k22 false ; "has support item" flag
       CONST$00C4D8F8 k23 TObject(-59.0)
-  +   CONST$00C4D900 k24 'template_support_*' ; name of support item to remove
+      CONST$00C4D900 k24 '[global.lua] AttemptFactionMoodClamp: beyond first mission sequence; not clamping faction mood\n' [h=6ABD1F45,$00A760C0]
 
   The desired behaviour, as lua source, is:
 

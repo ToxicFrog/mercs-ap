@@ -219,6 +219,8 @@ class Lua_GCString(Lua_GCObject):
   def __init__(self, pine, addr):
     super().__init__(pine, addr)
     self.hash = pine.peek32(addr+8)
+    # The string always has a null terminator in memory, which the size field
+    # does not account for.
     self.size = pine.peek32(addr+12)
     self.max_size = self.size
     self.data = pine.readmem(addr+16, self.size)
@@ -226,15 +228,18 @@ class Lua_GCString(Lua_GCObject):
   def __str__(self):
     return '%s [h=%08X,$%08X]' % (repr(self.data.decode(errors='replace')), self.hash, self.addr)
 
-  def set_string(self, buf: str):
+  def set_string(self, buf: str, max_size: int = 0):
+    max_size = max_size or self.max_size
     buf = buf.encode()
     # assert len(buf) <= self.max_size, f'Cannot exceed size of existing string table entry overwriting {self}'
-    if len(buf) > self.max_size:
+    if len(buf) > max_size:
       print("warning: truncating string")
       print('-', buf)
-      buf = buf[0:self.max_size-1]
+      buf = buf[0:max_size-1]
       print('+', buf)
     self.size = len(buf)
+    if self.max_size < max_size:
+      self.max_size = max_size
     self.pine.poke32(self.addr+12, self.size)
     self.pine.writemem(self.addr+16, buf + b'\0')
 

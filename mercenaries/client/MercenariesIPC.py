@@ -256,28 +256,19 @@ class MercenariesIPC:
     if self.debug_flag.val():
       return False
 
-    # TODO: issue here with the set_string calls: if we've previously had the
-    # client running, and it's put something else in those strings, and then
-    # had to restart the client, the reported string length is the length of
-    # what we wrote, not the original length, potentially truncating the new
-    # thing we want to write. We can make this less common (but not completely
-    # eliminate it) by setting the string to max-length whitespace or similar
-    # when not using it.
     self.money_bonus.set(money)
     if message:
-      # In practical terms, just by how much text we can fit on screen, this is
-      # probably limited to about 50 cols.
-      self.message_buffer.val().set_string(message)
+      max_size = len('[global.lua] AttemptFactionMoodClamp: just finished first mission sequence; unclamping faction mood\n')
+      self.message_buffer.val().set_string(message, max_size)
       self.has_message.set(True, tt=LUA_TBOOL)
     else:
-      self.message_buffer.val().set_string('-' * 90)
       self.has_message.set(False, tt=LUA_TBOOL)
 
     if support_item:
-      self.support_item.val().set_string(f'template_support_{support_item}')
+      max_size = len('[global.lua] AttemptFactionMoodClamp: within first mission sequence; clamping faction mood\n')
+      self.support_item.val().set_string(f'template_support_{support_item}', max_size)
       self.has_support_item.set(True, tt=LUA_TBOOL)
     else:
-      self.support_item.val().set_string('-' * 80)
       self.has_support_item.set(False, tt=LUA_TBOOL)
 
     self.debug_flag.set(True)
