@@ -115,26 +115,10 @@ class MercenariesConnector:
     # This is idempotent, so we just send the whole set of unlocks each time.
     # We do this even if the set of unlocks hasn't changed, because the player
     # may have unlocked new items in-game and we need to override that!
-    unlocks = {}
-    discount_factor = 1.0 - self.options['shop_discount_percent']/100
-
-    unlock_items = self.item_group('shop-unlock', items)
-    if not unlock_items:
-      self.game.set_unlocked_shop_items([], 0)
-      return
-
-    for item in unlock_items:
-      if item.tag in unlocks:
-        unlocks[item.tag] = item.discount(discount_factor)
-      else:
-        unlocks[item.tag] = item
-
-    discount_items = sorted(self.item_group('shop-discount', items), key=lambda x: x.discount, reverse=True)
-    for discount in discount_items:
-      item = max(unlocks.values(), key=lambda x: x.price)
-      unlocks[item.tag] = item.discount(1.0 - discount.discount/100)
-
-    self.game.set_unlocked_shop_items(sorted(unlocks.values(), key=lambda x: x.title), len(items))
+    # The IPC engine will avoid sending the entire batch if it knows it doesn't
+    # need to.
+    unlocks = set(self.item_group('shop-unlock', items))
+    self.game.set_unlocked_shop_items(sorted(unlocks, key=lambda x: x.tag), len(items))
 
   def send_intel_items(self, items):
     # This is fully idempotent and is a single call to setk() in practice so we

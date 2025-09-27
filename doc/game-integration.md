@@ -100,9 +100,9 @@ This means that to remove elements, we swap them into tail position (if
 necessary) and decrement `total_unlocked`, and to add elements, we write them at
 the tail and then increment `total_unlocked`.
 
-Discounts are handled entirely AP-side; we hardcode the "base price" of each item
-in the AP client, then compute the discounted price based on what items the player
-has found and that is what gets written to memory.
+It is tempting to believe that we can also handle discounts by editing the
+`price` field; unfortunately this is only used to display the price in the PDA,
+and does not affect the price you are actually charged when purchasing.
 
 
 ### Money

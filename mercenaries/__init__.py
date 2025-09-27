@@ -248,7 +248,6 @@ class MercenariesWorld(World):
       'goal',
       'vanilla_intel', 'vanilla_intel_target',
       'intel_in_pool', 'intel_target', 'progressive_intel',
-      'shop_discount_percent',
       toggles_as_bools=True
     ) | {
       'hints_from_cards': [

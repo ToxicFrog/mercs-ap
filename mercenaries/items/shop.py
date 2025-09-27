@@ -29,9 +29,6 @@ class ShopItem(NamedTuple):
   def classification(self):
     return ItemClassification.progression
 
-  def discount(self, discount):
-    return ShopItem(self.id, self.tag, floor(self.price * discount), self.template_groups, self.template, self.title)
-
 
 SHOP_ITEMS = [
   ShopItem(next_id(), u.tag, u.price, u.groups, u.template, u.name)

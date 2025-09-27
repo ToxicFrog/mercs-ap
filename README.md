@@ -27,15 +27,13 @@ chapter-specific checks.
 Depending on your yaml settings, it can use the vanilla intel amounts or a fixed
 number of "intel tokens" per ace, and it can be suited or progressive.
 
-**Merchant of Menace unlocks.** These are the only way to unlock new things in the store. You can enable duplicates in the item pool, in which case picking up duplicate unlocks will give you a permanent discount on that item.
+**Merchant of Menace unlocks.** These are the only way to unlock new things in the store.
 
 #### Filler
 
 **Cash bonuses.** These range from $5k to $500k.
 
 **Faction mood adjustments.** The more of these you have for a faction, the higher their minimum mood towards you is. There are diminishing returns as you collect more.
-
-**Shop discounts.** These range from 10% to 30% off. They are permanent and are automatically applied to whatever your most expensive item is. As you get more expensive items the coupons will automatically be moved around.
 
 **Free samples.** These apply to broad categories (e.g. "free airstrike") and will pick an appropriate random item from that category when issued to you. If you don't have at least three items in that category, they'll wait until you do. These samples are usually lost when you do anything involving a loading screen, so use it or lose it.
 

@@ -3,18 +3,6 @@ from math import ceil,floor
 from Options import PerGameCommonOptions, Toggle, DeathLink, StartInventoryPool, OptionSet, NamedRange, Range, OptionDict
 from dataclasses import dataclass
 
-'''
-Options to implement:
-- vanilla vs. fixed intel
-- per-card vs. progressive intel
-- missable location behaviour
-
-Options that will be useful once we have more features:
-- whether to include collectibles
-- whether to include collectible thresholds
-- filler options: MOM discounts, faction bonuses, etc
-'''
-
 class Goal(NamedRange):
   '''
   Select a win condition. The default is to complete chapter 4 by verifying the
@@ -101,26 +89,12 @@ class IntelTarget(Range):
 
 class ShopUnlockCount(Range):
   '''
-  Number of copies of each shop unlock to put in the pool. Finding duplicates
-  will give you discounts on those items.
+  Number of copies of each shop unlock to put in the pool.
   '''
   display_name = 'Shop Unlock Count'
   range_start = 1
   range_end = 5
   default = 1
-
-class ShopDiscountPercent(Range):
-  '''
-  Discount factor applied for each duplicate unlock. 0 means no discount, 100
-  means a 100% discount (i.e. the item becomes free).
-
-  Stacks multiplicatively: two 50% discounts give you 50% of 50% = 25% the list
-  price.
-  '''
-  display_name = 'Shop Discount %'
-  range_start = 0
-  range_end = 100
-  default = 50
 
 class BountyChecks(OptionDict):
   '''
@@ -176,6 +150,5 @@ class MercenariesOptions(PerGameCommonOptions):
   intel_in_pool: IntelAmount
   intel_target: IntelTarget
   shop_unlock_count: ShopUnlockCount
-  shop_discount_percent: ShopDiscountPercent
   bounty_checks: BountyChecks
   bounty_progression_limit: BountyProgressionLimit

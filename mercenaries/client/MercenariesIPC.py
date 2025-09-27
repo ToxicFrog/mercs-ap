@@ -278,10 +278,6 @@ class MercenariesIPC:
     '''
     Sets the unlocked shop items to match the given list.
 
-    The first element in each entry should be the item tag; the second should
-    be the number of copies of that item (>= 1). Excess items are applied as
-    discounts based on the discount_factor.
-
     Since this is potentially expensive (nearly 200 writes once everything is
     unlocked!) it does some simple checks first and skips updating if it doesn't
     need to.
@@ -294,10 +290,8 @@ class MercenariesIPC:
     game_count = self.shop.unlock_count()
 
     if ap_count != game_count or self.shop_txn != txn:
-      # Either:
-      # - the player has found a new unlock in-game we need to re-lock;
-      # - the player has received a new unlock through AP; or
-      # - the player has received a duplicate unlock or coupon and we need to apply a discount
+      # Either the player has received a new unlock through AP, or they've found
+      # something in-game we need to revoke.
       print(f'Updating shop items (game: count={game_count}, txn={self.shop_txn}; ap: count={ap_count}, txn={txn})')
       self.shop.set_unlocks(items)
       self.shop_txn = txn

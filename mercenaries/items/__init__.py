@@ -1,10 +1,5 @@
 '''
 Item catalogue for Mercenaries.
-
-At present this means:
-- intel (suited and progressive versions of vanilla and generic intel)
-- money ($50k, $100k, $250k, and $500k, based on the bounty rewards)
-- shop unlocks (can be duplicated, duplicates act as discounts)
 '''
 
 from itertools import chain

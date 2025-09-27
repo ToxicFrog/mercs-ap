@@ -59,33 +59,6 @@ class ReputationItem(NamedTuple):
     return {'reputation', 'filler'}
 
 
-class DiscountItem(NamedTuple):
-  '''
-  A floating discount that applies to whatever the most expensive item in the
-  shop is. Multiple discounts can stack but once enough have stacked that the
-  item in question is no longer the most expensive, they'll start applying to
-  something else.
-  '''
-  id: int
-  weight: int
-  discount: int
-
-  def __hash__(self):
-    return self.id
-
-  def name(self):
-    return f'{self.discount}% discount'
-
-  def count(self, options):
-    return self.weight
-
-  def classification(self):
-    return ItemClassification.filler
-
-  def groups(self):
-    return {'filler', 'shop', 'shop-discount'}
-
-
 class CouponItem(NamedTuple):
   '''
   A coupon for a free Merchant of Menace delivery. Only applies to things you
@@ -133,10 +106,6 @@ FILLER = [
   ReputationItem(next_id(), 2, 'Mafia'),
   ReputationItem(next_id(), 2, 'China'),
   ReputationItem(next_id(), 2, 'SK'),
-  # Disable these because they don't actually work :/
-  # DiscountItem(next_id(), 16, 10), # Worth about 45k, in the endgame, with diminishing returns
-  # DiscountItem(next_id(), 8, 20), # 90k
-  # DiscountItem(next_id(), 4, 30), # 135k
   CouponItem(next_id(), 8, 'airstrike', {'airstrike'}),
   CouponItem(next_id(), 8, 'supply drop', {'supplies'}),
   CouponItem(next_id(), 8, 'vehicle', {'vehicle'}),
