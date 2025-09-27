@@ -642,3 +642,7 @@ There's a similar `nextnw` that uses `g_iCurrentNwBountyIndex` and `'nw'`.
 Airstrike discount issues. The "airstrike price" field I've been modifying only
 affects the price displayed in the shop. The hotbar still displays the real price
 and you are still charged full price when buying it.
+
+Proposal: remove all discount filler items. Finding duplicate shop items now gives
+you one or more free copies of the item + a cash bonus. Add health/ammo capacity
+upgrades as filler if I can figure out how.

@@ -121,11 +121,10 @@ FILLER = [
   ReputationItem(next_id(), 2, 'Mafia'),
   ReputationItem(next_id(), 2, 'China'),
   ReputationItem(next_id(), 2, 'SK'),
-  # Just kind of winging it with these tbh
-  DiscountItem(next_id(), 16, 10), # Worth about 45k, in the endgame, with diminishing returns
-  DiscountItem(next_id(), 8, 20), # 90k
-  DiscountItem(next_id(), 4, 30), # 135k
-  # And these
+  # Disable these because they don't actually work :/
+  # DiscountItem(next_id(), 16, 10), # Worth about 45k, in the endgame, with diminishing returns
+  # DiscountItem(next_id(), 8, 20), # 90k
+  # DiscountItem(next_id(), 4, 30), # 135k
   CouponItem(next_id(), 8, 'airstrike', {'airstrike'}),
   CouponItem(next_id(), 8, 'supply drop', {'supplies'}),
   CouponItem(next_id(), 8, 'vehicle', {'vehicle'}),
