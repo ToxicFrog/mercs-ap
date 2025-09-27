@@ -22,6 +22,7 @@ tracker_loaded = False
 from CommonClient import CommonContext as SuperContext
 class MercenariesContext(SuperContext):
   game = 'Mercenaries'
+  pine_path: str
   items_handling = 0b111  # fully remote
   want_slot_data = True
   tags = {'AP'}
@@ -33,7 +34,8 @@ class MercenariesContext(SuperContext):
     super().__init__(server_address, password)
     self.auth = slot_name
     self.locations_checked = set()
-    self.ipc = MercenariesIPC(pine_path)
+    self.pine_path = pine_path
+    self.ipc = MercenariesIPC(self.pine_path)
     self.debug('Initialization complete.')
 
   def reset_server_state(self):
@@ -207,6 +209,8 @@ class MercenariesContext(SuperContext):
         import traceback
         self.debug(f'Unexpected error talking to the game:')
         self.debug(traceback.format_exc())
+        self.ipc = MercenariesIPC(pine=self.ipc.pine)
+        self.connector.game = self.ipc
         await asyncio.sleep(9)
       finally:
         await asyncio.sleep(1)

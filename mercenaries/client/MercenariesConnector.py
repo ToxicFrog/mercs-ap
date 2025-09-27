@@ -103,7 +103,8 @@ class MercenariesConnector:
       self.send_reputation_items(self.item_group('reputation', items))
       sent_items += self.send_once(items)
     except IPCError as e:
-      logger.info(f'Error sending items to game, will retry later: {e}')
+      # logger.info(f'Error sending items to game, will retry later: {e}')
+      pass
 
     return sent_items
 
