@@ -138,14 +138,6 @@ class MercenariesContext(SuperContext):
         self.debug('SEND: %s', msg)
     await super().send_msgs(msgs)
 
-  def strip_sent_items(self, items, sent):
-    sent = sent.copy()
-    for item in items:
-      if sent[item.item] > 0:
-        sent[item.item] -= 1
-      else:
-        yield item.item
-
   async def sync_with_game(self, connector):
     self.debug('Game sync running.')
     # sent_items is a map from item ID to number of copies of that item sent to
@@ -163,14 +155,13 @@ class MercenariesContext(SuperContext):
 
         # Send new items
         old_sent_items = Counter({int(k): v for k,v in self.stored_data['sent_items'].items()})
-        new_sent_items = connector.send_items(self.strip_sent_items(
-          self.items_received, old_sent_items))
+        new_sent_items = connector.send_items(self.items_received, old_sent_items)
 
-        if old_sent_items + new_sent_items != old_sent_items:
-          print(f'Updating sent_items as {old_sent_items + new_sent_items}')
+        if new_sent_items != old_sent_items:
+          print(f'Updating sent_items, diff: {new_sent_items - old_sent_items}')
           await self.send_msgs([
             {'cmd': 'Set', 'key': 'sent_items', 'want_reply': True, 'default': {},
-            'operations': [{'operation': 'replace', 'value': old_sent_items + new_sent_items}]}
+            'operations': [{'operation': 'replace', 'value': new_sent_items}]}
             ])
 
         # Get new checks and capture-based hints.

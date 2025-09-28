@@ -83,30 +83,33 @@ class MercenariesConnector:
   def item_group(self, group: str, items: List[int]) -> List[int]:
     return [item for item in items if group in item.groups()]
 
-  def send_items(self, items: List[int]) -> Set[int]:
+  def send_items(self, items: List[int], old_sent_items: Counter[int]) -> Counter[int]:
     '''
-    Send the specified items to the game. This is the complete list of items the
-    client knows we have received, minus any items we told it not to re-send (by
-    returning them in sent_items). The do-not-send list is remembered across
-    runs by the host.
+    Send the given items to the game. items is all of the items received by the
+    client, in order; old_sent_items is which of those and how many we've
+    previously reported as "successfully sent" to the client. The latter is
+    persisted across runs by the AP host.
 
     We have, broadly speaking, two kinds of items we care about: idempotent
     items, which can be re-sent without ill effects, and non-idempotent items,
     which must only be sent once. The latter are added to sent_items and
     returned to tell the client layer not to re-send them.
     '''
-    items = [item_by_id(id) for id in items]
-    sent_items = Counter()
+    items = [item_by_id(item.item) for item in items]
+    old_sent_items = Counter({item_by_id(id): old_sent_items[id] for id in old_sent_items})
+    new_sent_items = old_sent_items.copy()
     try:
       self.send_shop_items(self.item_group('shop', items))
       self.send_intel_items(self.item_group('intel', items))
       self.send_reputation_items(self.item_group('reputation', items))
-      sent_items += self.send_once(items)
+      new_sent_items |= self.send_once(items, old_sent_items)
     except IPCError as e:
-      # logger.info(f'Error sending items to game, will retry later: {e}')
+      logger.info(f'Error sending items to game, will retry later: {e}')
+      # Probably don't need to do this *every* time...
+      self.game = MercenariesIPC(pine=self.game.pine)
       pass
 
-    return sent_items
+    return Counter({item.id: new_sent_items[item] for item in new_sent_items})
 
   def queue_message(self, msg):
     self.messages.append(msg)
@@ -147,6 +150,7 @@ class MercenariesConnector:
     self.game.set_intel(total_intel, target_intel)
 
   def send_reputation_items(self, items):
+    # These just override the reputation floor so we can send them unconditionally.
     factions = Counter()
     for item in items:
       factions[item.faction()] += 1
@@ -157,43 +161,51 @@ class MercenariesConnector:
         floor = 100 - (100 * 0.9 ** (count-2))
       self.game.set_reputation_floor(faction, floor)
 
-  def send_once(self, items):
+  def send_once(self, items: List[int], old_sent_items: Counter[int]) -> Counter[int]:
     '''
     Send things that need to only be delivered once.
 
-    At the moment this means money (in the items array) and messages (in the
-    sendq). We don't care so much about losing messages (they're in the text
-    client, displaying them in-game is only useful if they're delivered
-    promptly) but we do care about losing money, so the latter gets returned
-    to the caller so it can be recorded server-side as having been delivered.
+    items is a list of all items received by the client, in order, including
+    ones we don't care about here. old_sent_items records which ones we have
+    previously reported as sent and how many of each. We return an updated
+    old_sent_items.
+
+    This function also processes messages, which are queued using queue_message
+    rather than sent in the item list.
     '''
     if not self.messages:
       message = ''
     else:
       message = self.messages[0]
 
-    money = self.item_group('money', items)
-    money_total = sum(item.amount for item in money)
-    sent = Counter(item.id for item in money)
+    new_sent_items = old_sent_items.copy()
 
-    support_template = ''
+    # We can batch all the money together in a single message.
+    all_money = Counter(self.item_group('money', items))
+    unsent_money = all_money - old_sent_items
+    money_total = sum(item.amount for item in unsent_money.elements())
+    new_sent_items |= all_money
+
+    # We can only send a single coupon, so find the first coupon that we have
+    # enough unlocks to reify and deliver it to the player.
+    # TODO: turn undelivered duplicate unlocks into coupons and cash bonuses.
+    support_item = ''
     unlocks = self.item_group('shop-unlock', items)
     support = self.item_group('shop-coupon', items)
     for coupon in support:
       matches = [item for item in unlocks if coupon.applies_to(item)]
-      if len(matches) < 3:
+      if not matches:
         continue
-      support_item = random.choice(matches)
-      support_template = support_item.template
-      sent += Counter([coupon.id])
+      support_item = random.choice(matches).template
+      new_sent_items += Counter([coupon])
       break
 
-    if self.game.send_once(money=money_total, message=message, support_item=support_template):
-      if support_template:
-        print(f'Reified {coupon} as {support_template} from choices {[i.title for i in matches]}')
-      print(f'Successfully dispatched ${money_total:,d} + support {support_template} + message {message}')
+    if self.game.send_once(money=money_total, message=message, support_item=support_item):
+      if support_item:
+        print(f'Reified {coupon} as {support_item} from choices {[i.title for i in matches]}')
+      print(f'Successfully dispatched ${money_total:,d} + support[{support_item}] + message "{message}"')
       if self.messages:
         self.messages.popleft()
-      return sent
+      return new_sent_items
     else:
-      return Counter()
+      return old_sent_items
